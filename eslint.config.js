@@ -1,14 +1,22 @@
-module.exports = {
-  env: {
-    node: true,
-    es2021: true,
-  },
-  extends: "eslint:recommended",
-  parserOptions: {
-    ecmaVersion: 12,
-    sourceType: "module",
-  },
-  rules: {
-    // add any custom rules here
-  },
-};
+// eslint.config.js
+import js from "@eslint/js";
+import globals from "globals";
+
+export default [
+  {
+    files: ["**/*.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: {
+        ...globals.node,
+        ...globals.jest
+      }
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      "no-console": "off",
+      "no-unused-vars": "warn"
+    }
+  }
+];

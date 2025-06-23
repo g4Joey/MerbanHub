@@ -1,5 +1,12 @@
-const fs = require('fs');
-const path = require('path');
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+import express from 'express';
+
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const scansDir = path.join(__dirname, 'scans');
 const outputDir = path.join(__dirname, '..', 'output');
@@ -10,13 +17,11 @@ console.log(`Scans Directory: ${scansDir}`);
 console.log(`Output Directory: ${outputDir}`);
 console.log(`Logs Directory: ${logsDir}`);
 
-require('dotenv').config();
-const express = require('express');
 const app = express();
 
-app.get('/', (req, res) => res.send('OCR Indexer is alive'));
-const port = process.env.PORT || 3000;
+app.get('/', (_req, res) => res.send('OCR Indexer is alive'));
+
+const port = process.env.PORT ?? 3000;
 app.listen(port, () => console.log(`Listening on ${port}`));
 
-
-// Add your OCR logic here in future
+// Add your OCR logic here in future…
