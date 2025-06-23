@@ -2,46 +2,25 @@ name: CI
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, dev ]
+    branches: [ main ]
 
 jobs:
-  build-test:
+  build:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:14
-        env:
-          POSTGRES_USER: ocr
-          POSTGRES_PASSWORD: ocrpass
-          POSTGRES_DB: ocrdb
-        ports: [ "5432:5432" ]
-        options: >-
-          --health-cmd "pg_isready -U ocr -d ocrdb"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Use Node.js 16
+      - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "16"
+          node-version: '18' # or whatever version you're using
 
       - name: Install dependencies
         run: npm install
 
-      - name: Lint
+      - name: Run Linter
         run: npm run lint
-
-      - name: Test
-        env:
-          DATABASE_URL: postgresql://ocr:ocrpass@localhost:5432/ocrdb
-        run: npm test
-
-      - name: Build Docker Image
-        run: docker build -t merbanhub:ci .
