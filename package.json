@@ -17,5 +17,12 @@
   "bugs": {
     "url": "https://github.com/g4Joey/MerbanHub/issues"
   },
-  "homepage": "https://github.com/g4Joey/MerbanHub#readme"
+  "homepage": "https://github.com/g4Joey/MerbanHub#readme",
+  "dependencies": {
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "pg": "^8.16.2",
+    "tesseract.js": "^6.0.1"
+  }
 }
