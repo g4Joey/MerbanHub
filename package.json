@@ -4,9 +4,10 @@
   "description": "OCR and Document Indexing System for UMB Capital",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"No tests yet\" && exit 0",
-    "lint": "eslint src/**/*.js"
-  },
+  "lint": "eslint src --ext .js",
+  "test": "jest",
+  "check": "npm run lint && npm run test"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
