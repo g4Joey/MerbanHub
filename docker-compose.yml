@@ -5,8 +5,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: merbanhub-ocr
-    restart: unless-stopped
     env_file:
       - .env
     volumes:
@@ -19,8 +17,6 @@ services:
 
   db:
     image: postgres:14
-    container_name: merbanhub-db
-    restart: unless-stopped
     env_file:
       - .env
     volumes:
@@ -28,10 +24,10 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "ocr", "-d", "ocrdb"]
+      test: ["CMD","pg_isready","-U","ocr","-d","ocrdb"]
       interval: 10s
       timeout: 5s
       retries: 5
 
 volumes:
-  db_data:
+  db_data: {}

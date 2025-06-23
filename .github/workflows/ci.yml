@@ -2,13 +2,9 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
-      - dev
+    branches: [ main, dev ]
   pull_request:
-    branches:
-      - main
-      - dev
+    branches: [ main, dev ]
 
 jobs:
   build-test:
@@ -21,8 +17,7 @@ jobs:
           POSTGRES_USER: ocr
           POSTGRES_PASSWORD: ocrpass
           POSTGRES_DB: ocrdb
-        ports:
-          - 5432:5432
+        ports: [ "5432:5432" ]
         options: >-
           --health-cmd "pg_isready -U ocr -d ocrdb"
           --health-interval 10s
@@ -30,8 +25,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
       - name: Use Node.js 16
         uses: actions/setup-node@v3
