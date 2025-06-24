@@ -2,6 +2,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import express from 'express';
+import mysql from 'mysql2';
 
 dotenv.config();
 
@@ -16,6 +17,22 @@ console.log('MerbanHub OCR Indexer initialized.');
 console.log(`Scans Directory: ${scansDir}`);
 console.log(`Output Directory: ${outputDir}`);
 console.log(`Logs Directory: ${logsDir}`);
+
+// MySQL connection setup
+const db = mysql.createConnection({
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'merbanhub'
+});
+
+db.connect((err) => {
+  if (err) {
+    console.error('MySQL connection error:', err);
+  } else {
+    console.log('Connected to MySQL database!');
+  }
+});
 
 const app = express();
 
