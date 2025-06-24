@@ -8,6 +8,26 @@ MerbanHub is a Node.js-based system for Optical Character Recognition (OCR) and 
 
 ---
 
+## Team Folders & Responsibilities
+
+- **backend-java-springboot/**  
+  For Java Spring Boot backend services.  
+  _Lead: Kenny_
+
+- **backend-python-django/**  
+  For Python Django backend services.  
+  _Lead: Kojo_
+
+- **frontend-react/**  
+  For React frontend code, Tailwind CSS, and Shadcn UI components.  
+  _Leads: Eddie, Lucius_
+
+- **database/**  
+  For SQL scripts, schema designs, and database documentation.  
+  _Leads: Ruth, Angela_
+
+---
+
 ## Getting Started
 
 ### 1. Clone the Repository
@@ -17,44 +37,19 @@ git clone https://github.com/g4Joey/MerbanHub.git
 cd MerbanHub
 ```
 
-### 2. Install Dependencies
+### 2. Install Dependencies (per folder as needed)
 
-```sh
-npm install
-```
-
-### 3. Set Up Environment Variables
-
-- Copy `.env.example` to `.env` and fill in the required values.
+See each folder's README or instructions for setup.
 
 ---
 
 ## Development Workflow
 
-### 1. Pull Latest Changes
-
-```sh
-git checkout dev
-git pull origin dev
-```
-
-### 2. Create a Feature Branch
-
-```sh
-git checkout -b feature/your-feature-name
-```
-
-### 3. Make Changes & Commit
-
-```sh
-git add .
-git commit -m "Describe your changes"
-git push origin feature/your-feature-name
-```
-
-### 4. Open a Pull Request
-
-- Go to GitHub and open a pull request from your feature branch into `dev`.
+1. Pull latest changes from `dev` branch.
+2. Create a feature branch from `dev`.
+3. Work in your assigned folder.
+4. Commit and push your changes.
+5. Open a pull request to `dev` for review.
 
 ---
 
@@ -76,10 +71,9 @@ git push origin feature/your-feature-name
 
 ## Contributing
 
-1. Fork the repository (if needed).
-2. Create a feature branch from `dev`.
-3. Submit a pull request to `dev`.
-4. Request a review from a team member.
+- Work in your assigned folder.
+- Ask for help if you get stuck—everyone is learning!
+- All code must be reviewed by the project manager (scrum leader) before merging.
 
 ---
 
@@ -89,4 +83,4 @@ ISC
 
 ---
 
-*For questions, contact the project manager or a senior developer.*
+*For questions, contact the project manager or open an issue.*
