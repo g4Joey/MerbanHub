@@ -19,37 +19,105 @@ MerbanHub is a Node.js-based system for Optical Character Recognition (OCR) and 
   _Lead: Kojo_
 
 - **frontend-react/**  
-  For React frontend code, Tailwind CSS, and Shadcn UI components.  
+  For React frontend development.  
   _Leads: Eddie, Lucius_
 
 - **database/**  
-  For SQL scripts, schema designs, and database documentation.  
+  For SQL schema and queries.  
   _Leads: Ruth, Angela_
 
 ---
 
-## Getting Started
+## MySQL Setup for Node.js Backend
 
-### 1. Clone the Repository
+### 1. Install MySQL Server
 
-```sh
-git clone https://github.com/g4Joey/MerbanHub.git
-cd MerbanHub
+- [Download MySQL Community Server](https://dev.mysql.com/downloads/mysql/)
+- Install and set up a root password.
+
+### 2. Create a Database
+
+Open your MySQL client or terminal and run:
+
+```sql
+CREATE DATABASE merbanhub_db;
+CREATE USER 'merbanhub_user'@'localhost' IDENTIFIED BY 'yourpassword';
+GRANT ALL PRIVILEGES ON merbanhub_db.* TO 'merbanhub_user'@'localhost';
+FLUSH PRIVILEGES;
 ```
 
-### 2. Install Dependencies (per folder as needed)
+### 3. Configure Environment Variables
 
-See each folder's README or instructions for setup.
+Create a `.env` file in the `backend` folder (or project root) with:
+
+```env
+DB_HOST=localhost
+DB_USER=merbanhub_user
+DB_PASSWORD=yourpassword
+DB_NAME=merbanhub_db
+DB_PORT=3306
+```
+
+### 4. Install Node.js Dependencies
+
+In the backend folder, run:
+
+```sh
+npm install mysql2 dotenv
+```
+
+### 5. Sample MySQL Connection (Node.js)
+
+```js
+// filepath: src/index.js
+const mysql = require('mysql2');
+require('dotenv').config();
+
+const connection = mysql.createConnection({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT
+});
+
+connection.connect((err) => {
+  if (err) {
+    console.error('Error connecting to MySQL:', err);
+    return;
+  }
+  console.log('Connected to MySQL database!');
+});
+```
 
 ---
 
 ## Development Workflow
 
-1. Pull latest changes from `dev` branch.
-2. Create a feature branch from `dev`.
-3. Work in your assigned folder.
-4. Commit and push your changes.
-5. Open a pull request to `dev` for review.
+### 1. Pull Latest Changes
+
+```sh
+git checkout dev
+git pull origin dev
+```
+
+### 2. Create a Feature Branch
+
+```sh
+git checkout -b feature/your-feature-name
+```
+
+### 3. Make Changes & Commit
+
+```sh
+git add .
+git commit -m "Describe your changes"
+git push origin feature/your-feature-name
+```
+
+### 4. Open a Pull Request
+
+- Go to GitHub and open a pull request from your feature branch into `dev`.
 
 ---
 
@@ -71,9 +139,10 @@ See each folder's README or instructions for setup.
 
 ## Contributing
 
-- Work in your assigned folder.
-- Ask for help if you get stuck—everyone is learning!
-- All code must be reviewed by the project manager (scrum leader) before merging.
+1. Fork the repository (if needed).
+2. Create a feature branch from `dev`.
+3. Submit a pull request to `dev`.
+4. Request a review from a team member.
 
 ---
 
@@ -83,4 +152,4 @@ ISC
 
 ---
 
-*For questions, contact the project manager or open an issue.*
+_For questions, contact the project manager or open an issue._
