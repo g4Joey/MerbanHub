@@ -15,6 +15,6 @@ Thumbs.db
 node_modules/
 node_modules/
 node_modules
-
+.idea/
 # Copilot notes
 copilot-notes.txt
