@@ -153,3 +153,24 @@ ISC
 ---
 
 _For questions, contact the project manager or open an issue._
+
+---
+
+## database/
+
+### Setup MySQL
+
+1. Install MySQL 8 on your computer, or use Docker by running:
+
+   ```sh
+   docker-compose up db
+   ```
+
+2. Create the database (if not created automatically):
+
+   ```sh
+   mysql -u merbanhub_user -pyourpassword -e "CREATE DATABASE merbanhub_db;"
+   ```
+
+3. (Optional) Use a MySQL client like MySQL Workbench or DBeaver to connect and manage your database.
+4. The database will be available at `localhost:3306` with the credentials set in your `.env` file or `docker-compose.yml`.
