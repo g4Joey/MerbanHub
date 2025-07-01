@@ -1,6 +1,8 @@
 "use client"
 
 import * as React from "react"
+import logo  from "@/components/assets/merbanhub.jpg"
+import Image from "next/image"
 import {
   IconCamera,
   IconChartBar,
@@ -32,6 +34,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { Upload } from "lucide-react"
 
 const data = {
   user: {
@@ -42,13 +45,13 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "#",
+      url: "/dashboard",
       icon: IconDashboard,
     },
     {
-      title: "Lifecycle",
-      url: "#",
-      icon: IconListDetails,
+      title: "upload",
+      url: "dashboard/upload",
+      icon: Upload,
     },
     {
       title: "Analytics",
@@ -156,15 +159,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
+            {/* <SidebarMenuButton
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
-            >
-              <a href="#">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
-              </a>
-            </SidebarMenuButton>
+            > */}
+            <a href="#">
+              {/* <IconInnerShadowTop className="!size-5" />
+                <span className="text-base font-semibold">Acme Inc.</span> */}
+              <Image
+                src={logo}
+                alt="MerbanHub Logo"
+                className="ml-2 h-[5rem] w-[5rem] bg-transparent "
+              />
+            </a>
+            {/* </SidebarMenuButton> */}
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
@@ -177,5 +185,5 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavUser user={data.user} />
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }
