@@ -174,3 +174,22 @@ _For questions, contact the project manager or open an issue._
 
 3. (Optional) Use a MySQL client like MySQL Workbench or DBeaver to connect and manage your database.
 4. The database will be available at `localhost:3306` with the credentials set in your `.env` file or `docker-compose.yml`.
+
+---
+
+## 📅 Team Calendar: Sprint & Standup Meetings
+
+A shared calendar file is available at `merbanhub-sprint-calendar.ics`.
+
+**How to use:**
+1. Download or copy the `merbanhub-sprint-calendar.ics` file from the repo.
+2. Import it into your calendar app (Google Calendar, Outlook, Apple Calendar, etc.).
+3. **Update your email address** in the .ics file (search for `your-email@example.com` and replace it with your own) to receive email reminders for meetings.
+
+**Events include:**
+- Main Sprint Meetings (Tuesdays & Fridays)
+- Sunday Check-ins
+- Popup reminders 15 minutes before
+- Email reminders 1 hour before (if you set your email)
+
+If you need help importing or customizing the calendar, ask in the team chat!
