@@ -2,13 +2,28 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, dev ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, dev ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: merbanhub_db
+          MYSQL_USER: merbanhub_user
+          MYSQL_PASSWORD: yourpassword
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     steps:
       - name: Checkout code
@@ -24,3 +39,8 @@ jobs:
 
       - name: Run Linter
         run: npm run lint
+
+      - name: Run Tests
+        env:
+          DATABASE_URL: mysql://merbanhub_user:yourpassword@127.0.0.1:3306/merbanhub_db
+        run: npm test

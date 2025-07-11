@@ -11,8 +11,16 @@ logs/
 # OS/temp files
 .DS_Store
 Thumbs.db
-"node_modules/" 
 node_modules/
 node_modules/
 node_modules
+<<<<<<< HEAD
 .idea/
+=======
+.idea/
+# Copilot notes
+copilot-notes.txt
+DockerDesktopInstaller.exe
+
+git commit -m "Resolve .gitignore merge conflict"
+>>>>>>> origin/dev
