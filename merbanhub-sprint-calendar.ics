@@ -41,7 +41,8 @@ TRIGGER:-PT1H
 ACTION:EMAIL
 DESCRIPTION:Sunday Check-in starts in 1 hour
 SUMMARY:Sunday Check-in Reminder
-ATTENDEE:mailto:your-email@example.com
+ATTENDEE:mailto:your-jazu001@st.ug.egu.gh
+
 END:VALARM
 END:VEVENT
 
