@@ -193,3 +193,22 @@ A shared calendar file is available at `merbanhub-sprint-calendar.ics`.
 - Email reminders 1 hour before (if you set your email)
 
 If you need help importing or customizing the calendar, ask in the team chat!
+
+---
+
+## Importing the Agile Meeting Calendar
+
+You can import the team calendar from the `merbanhub-sprint-calendar.ics` file into Google Calendar, Outlook, or Apple Calendar:
+
+1. Open your calendar app and look for an "Import" option.
+2. Select the `merbanhub-sprint-calendar.ics` file from the project root.
+3. Complete the import process to add all recurring Agile meetings to your calendar.
+
+**To receive email reminders:**
+
+- Open `merbanhub-sprint-calendar.ics` in a text editor.
+- Find the lines with `ATTENDEE:mailto:your-email@example.com` under each event.
+- Replace `your-email@example.com` with your actual email address.
+- Save the file and re-import it to your calendar app if needed.
+
+---
