@@ -1,22 +1,35 @@
-# Node modules
-node_modules/
+# === Python ===
+_pycache_/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
 
-# Logs
-logs/
+# === Virtual environments ===
+.venv/
+env/
+
+# === Django ===
 *.log
+*.pot
+*.pyc
 
-# Environment files (keep .env.example)
-.env
+# === Output folders ===
+processed/
+incoming-scan/
 
 # OS/temp files
 .DS_Store
 Thumbs.db
-node_modules/
-node_modules/
-node_modules
-.idea/
-# Copilot notes
-copilot-notes.txt
-DockerDesktopInstaller.exe
 
-git commit -m "Resolve .gitignore merge conflict"
+# === Node ===
+node_modules/
+
+# === IDE / Editor ===
+.idea/
+
+# === Copilot notes ===
+copilot-notes.txt
+
+# === Executables / Installers ===
+DockerDesktopInstaller.exe
