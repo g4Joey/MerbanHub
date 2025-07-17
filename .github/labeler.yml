@@ -1,0 +1,14 @@
+frontend:
+  - 'frontend-react/**'
+backend-java:
+  - 'backend-java-springboot/**'
+backend-python:
+  - 'backend-python-django/**'
+database:
+  - 'database/**'
+ocr:
+  - 'ocr_service/**'
+docs:
+  - 'docs/**'
+ci:
+  - '.github/workflows/**'
