@@ -1,21 +1,27 @@
-# Node modules
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+
+# Virtual environments
+.venv/
+env/
+
+# Django
+*.log
+*.pot
+*.pyc
+
+# Output folders
+processed/
+incoming-scan/
+
+# Node
 node_modules/
 
-# Logs
-logs/
-*.log
-
-# Environment files (keep .env.example)
-.env
-
-# OS/temp files
+# System
 .DS_Store
 Thumbs.db
-"node_modules/" 
-node_modules/
-node_modules/
-node_modules
-.idea/
-# Copilot notes
-copilot-notes.txt
-.venv/
+
