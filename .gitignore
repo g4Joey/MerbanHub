@@ -1,27 +1,35 @@
-# Python
-__pycache__/
+# === Python ===
+_pycache_/
 *.pyc
 *.pyo
 *.pyd
 *.sqlite3
 
-# Virtual environments
+# === Virtual environments ===
 .venv/
 env/
 
-# Django
+# === Django ===
 *.log
 *.pot
 *.pyc
 
-# Output folders
+# === Output folders ===
 processed/
 incoming-scan/
 
-# Node
+# === Node ===
 node_modules/
 
-# System
+# === IDE / Editor ===
+.idea/
+
+# === Copilot notes ===
+copilot-notes.txt
+
+# === Executables / Installers ===
+DockerDesktopInstaller.exe
+
+# === System files ===
 .DS_Store
 Thumbs.db
-
