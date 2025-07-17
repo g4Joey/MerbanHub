@@ -8,92 +8,149 @@ from pdf2image import convert_from_path
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-# === Paths ===
-SCAN_DIR = "incoming-scan"
-PROCESSED_DIR = "processed"
+# === Directories ===
+SCAN_DIR            = "incoming-scan"
+FULLY_INDEXED_DIR   = "fully_indexed"
+PARTIAL_INDEXED_DIR = "partially_indexed"
+FAILED_DIR          = "failed"
 
-# External tools
-POPPLER_PATH = r"C:\poppler-24.08.0\Library\bin"
-TESSERACT_CMD = r"C:\Users\KC-USER\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
+# Make sure these exist
+for d in (FULLY_INDEXED_DIR, PARTIAL_INDEXED_DIR, FAILED_DIR):
+    os.makedirs(d, exist_ok=True)
+
+# === OCR Tools ===
+POPPLER_PATH  = r"D:\Downloads\Release-24.08.0-0\poppler-24.08.0\Library\bin"  # adjust as needed
+TESSERACT_CMD = r"C:\Program Files\Tesseract-OCR\tesseract.exe"               # adjust as needed
 pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
 
-# === Core functions ===
+# === Helpers ===
 
-def convert_image_to_pdf(image_path):
-    img = Image.open(image_path).convert("RGB")
-    pdf_filename = os.path.splitext(os.path.basename(image_path))[0] + ".pdf"
-    pdf_path = os.path.join(PROCESSED_DIR, pdf_filename)
-    img.save(pdf_path)
-    print(f"[INFO] Converted image to PDF: {pdf_path}")
-    return pdf_path
-
-def extract_text_from_pdf(pdf_path):
-    text = ""
-    try:
-        images = convert_from_path(pdf_path, poppler_path=POPPLER_PATH)
-        for img in images:
-            text += pytesseract.image_to_string(img)
-    except Exception as e:
-        print(f"[ERROR] Failed to convert or OCR: {e}")
+def extract_text(path):
+    ext = os.path.splitext(path)[1].lower()
+    if ext == ".pdf":
+        try:
+            pages = convert_from_path(path, poppler_path=POPPLER_PATH)
+        except Exception as e:
+            print(f"[ERROR] PDF conversion failed: {e}")
+            return ""
+        text = "".join(pytesseract.image_to_string(p) for p in pages)
+    else:
+        img = Image.open(path).convert("RGB")
+        text = pytesseract.image_to_string(img)
     return text
 
-def parse_metadata(text):
-    name_match = re.search(r"Client[:\-]?\s*(\w+)\s+(\w+)", text)
-    acc_match = re.search(r"ACC\d+", text)
-    date_match = re.search(r"\d{4}-\d{2}-\d{2}", text)
+def parse_fields(text):
+    m_name    = re.search(r"name\s*:\s*([A-Za-z ]+)", text, re.IGNORECASE)
+    m_account = re.search(r"account\s*no\s*[:\-]?\s*([A-Za-z0-9\-]+)", text, re.IGNORECASE)
+    name    = m_name.group(1).strip().replace(" ", "_") if m_name else None
+    account = m_account.group(1).strip()                if m_account else None
+    return name, account
 
-    first, last = name_match.groups() if name_match else ("Unknown", "Client")
-    acc = acc_match.group() if acc_match else "ACC0000"
-    date = date_match.group() if date_match else "0000-00-00"
+def route_file(src_path):
+    filename = os.path.basename(src_path)
+    ext = os.path.splitext(filename)[1].lower()
 
-    return f"{last}_{first}_{acc}_{date}.pdf"
+    text = extract_text(src_path)
+    name, account = parse_fields(text)
 
-def process_file(file_path):
-    print(f"[INFO] Processing file: {file_path}")
+    is_image = ext in [".png", ".jpg", ".jpeg"]
 
-    ext = os.path.splitext(file_path)[1].lower()
-
-    if ext in [".png", ".jpg", ".jpeg"]:
-        # If it's an image → convert to PDF in processed/
-        pdf_path = convert_image_to_pdf(file_path)
-        # Delete the original image to keep things tidy
-        os.remove(file_path)
-        file_path = pdf_path
-
-    text = extract_text_from_pdf(file_path)
-    new_filename = parse_metadata(text)
-    new_path = os.path.join(PROCESSED_DIR, new_filename)
-
-    # If the file is already in PROCESSED_DIR, just rename it
-    if os.path.dirname(file_path) == os.path.abspath(PROCESSED_DIR):
-        os.rename(file_path, new_path)
+    if name and account:
+        new_filename = f"{name}_{account}.pdf" if is_image else f"{name}_{account}{ext}"
+        dest_dir = FULLY_INDEXED_DIR
+    elif name or account:
+        key = name or account
+        new_filename = f"{key}.pdf" if is_image else f"{key}{ext}"
+        dest_dir = PARTIAL_INDEXED_DIR
     else:
-        shutil.move(file_path, new_path)
+        new_filename = filename  # keep original
+        dest_dir = FAILED_DIR
 
-    print(f"[SUCCESS] Saved to: {new_path}")
+    dest_path = os.path.join(dest_dir, new_filename)
 
-# === Watchdog ===
+    if dest_dir == FAILED_DIR:
+        # Just move the file as-is
+        shutil.move(src_path, dest_path)
+        print(f"[{dest_dir.upper()}] {filename} → {new_filename}")
+        return
+
+    if is_image:
+        # Convert image to PDF and save as new file, then remove original
+        if not os.path.exists(src_path):
+            print(f"[SKIP] Source image missing before conversion: {src_path}")
+            return
+        try:
+            img = Image.open(src_path).convert("RGB")
+            img.save(dest_path, "PDF", resolution=100.0)
+            if os.path.exists(src_path):
+                os.remove(src_path)
+            print(f"[{dest_dir.upper()}] {filename} → {new_filename} (converted to PDF)")
+        except Exception as e:
+            print(f"[ERROR] Failed to convert {filename} to PDF: {e}")
+            # If conversion fails, move to failed as original (if it still exists)
+            if os.path.exists(src_path):
+                fail_path = os.path.join(FAILED_DIR, filename)
+                shutil.move(src_path, fail_path)
+                print(f"[FAILED] {filename} → {filename}")
+            else:
+                print(f"[SKIP] Source image missing after failed conversion: {src_path}")
+    else:
+        shutil.move(src_path, dest_path)
+        print(f"[{dest_dir.upper()}] {filename} → {new_filename}")
+
+# === Watcher ===
+
 
 class ScanHandler(FileSystemEventHandler):
+    def _process(self, path):
+        if not path.lower().endswith((".pdf", ".png", ".jpg", ".jpeg")):
+            return
+        # Add a small initial delay to give the OS time to finish file operations
+        time.sleep(0.3)
+        last_exception = None
+        for attempt in range(10):
+            try:
+                if not os.path.isfile(path):
+                    raise FileNotFoundError(f"{path} not found (attempt {attempt+1})")
+                with open(path, 'rb') as f:
+                    f.read(1)
+                route_file(path)
+                return
+            except Exception as e:
+                last_exception = e
+                time.sleep(0.5)
+        print(f"[ERROR] Failed to process {path} after multiple attempts: {last_exception}")
+
     def on_created(self, event):
-        if not event.is_directory and event.src_path.lower().endswith((".pdf", ".png", ".jpg", ".jpeg")):
-            time.sleep(1)
-            process_file(event.src_path)
+        if event.is_directory:
+            return
+        self._process(event.src_path)
+
+    def on_moved(self, event):
+        if event.is_directory:
+            return
+        self._process(event.dest_path)
+
+    def on_modified(self, event):
+        # Optionally process modified files (uncomment if needed)
+        # if event.is_directory:
+        #     return
+        # self._process(event.src_path)
+        pass
 
 def start_watcher():
-    print("[WATCHING] Folder:", SCAN_DIR)
-    observer = Observer()
-    observer.schedule(ScanHandler(), path=SCAN_DIR, recursive=False)
-    observer.start()
-
+    abs_scan_dir = os.path.abspath(SCAN_DIR)
+    print(f"[WATCHING] {abs_scan_dir} → (fully|partial|failed)")
+    os.makedirs(SCAN_DIR, exist_ok=True)
+    obs = Observer()
+    obs.schedule(ScanHandler(), path=SCAN_DIR, recursive=False)
+    obs.start()
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        observer.stop()
-    observer.join()
+        obs.stop()
+    obs.join()
 
 if __name__ == "__main__":
-    os.makedirs(SCAN_DIR, exist_ok=True)
-    os.makedirs(PROCESSED_DIR, exist_ok=True)
     start_watcher()
