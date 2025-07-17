@@ -1,176 +1,209 @@
 # MerbanHub
 
-OCR and Document Indexing System for UMB Capital
-
-## Project Overview
-
-MerbanHub is a Node.js-based system for Optical Character Recognition (OCR) and document indexing, designed to streamline document management for UMB Capital.
+## OCR & Document Indexing System for UMB Capital
 
 ---
 
-## Team Folders & Responsibilities
+## Table of Contents
 
-- **backend-java-springboot/**  
-  For Java Spring Boot backend services.  
-  _Lead: Kenny_
-
-- **backend-python-django/**  
-  For Python Django backend services.  
-  _Lead: Kojo_
-
-- **frontend-react/**  
-  For React frontend development.  
-  _Leads: Eddie, Lucius_
-
-- **database/**  
-  For SQL schema and queries.  
-  _Leads: Ruth, Angela_
+1. [Overview](#overview)
+2. [Folder Structure](#folder-structure)
+3. [Prerequisites](#prerequisites)
+4. [Service Setup](#service-setup)
+   - [OCR Service (Node.js)](#ocr-service-nodejs)
+   - [Java API (Spring Boot)](#java-api-spring-boot)
+   - [Django API (Python)](#django-api-python)
+   - [Frontend (React/Next.js)](#frontend-reactnextjs)
+   - [Database (MySQL)](#database-mysql)
+5. [Running Locally](#running-locally)
+6. [Development Workflow](#development-workflow)
+7. [Contributing](#contributing)
+8. [License](#license)
 
 ---
 
-## MySQL Setup for Node.js Backend
+## Overview
 
-### 1. Install MySQL Server
+MerbanHub is a prototype OCR and document‑indexing system built for UMB Capital.
+It watches a shared scan folder, runs OCR, parses metadata, renames files, indexes records in MySQL, and exposes APIs and a React dashboard for search and monitoring.
 
-- [Download MySQL Community Server](https://dev.mysql.com/downloads/mysql/)
-- Install and set up a root password.
+---
 
-### 2. Create a Database
+## Folder Structure
 
-Open your MySQL client or terminal and run:
-
-```sql
-CREATE DATABASE merbanhub_db;
-CREATE USER 'merbanhub_user'@'localhost' IDENTIFIED BY 'yourpassword';
-GRANT ALL PRIVILEGES ON merbanhub_db.* TO 'merbanhub_user'@'localhost';
-FLUSH PRIVILEGES;
+```
+backend-java-springboot/
+backend-python-django/
+frontend-react/merbanhub/
+database/
+ocr_service/
 ```
 
-### 3. Configure Environment Variables
+| Directory                | Owner               | Purpose                                      |
+|--------------------------|---------------------|----------------------------------------------|
+| `backend-java-springboot`| Kenny               | REST API for logs, documents, healthcheck    |
+| `backend-python-django`  | Kojo                | (Optional) admin UI, file‐upload API         |
+| `frontend-react`         | Eddie & Lucius      | React/Next.js UI & data fetching             |
+| `database`               | Ruth & Angela       | MySQL schema, migrations, seed data          |
+| `ocr_service`            | Lucius & Kojo       | Folder watcher, OCR, metadata parsing, index |
 
-Create a `.env` file in the `backend` folder (or project root) with:
+---
 
-```env
-DB_HOST=localhost
-DB_USER=merbanhub_user
-DB_PASSWORD=yourpassword
-DB_NAME=merbanhub_db
-DB_PORT=3306
+## Prerequisites
+
+- **Docker & Docker Compose**
+- **Node.js ≥16**
+- **Java ≥17**
+- **Python ≥3.9**
+- **MySQL 8** (or use the Docker service below)
+
+### Installing Docker & Docker Compose
+
+1. Download and install [Docker Desktop](https://www.docker.com/products/docker-desktop/) for your OS (Windows, Mac, or Linux).
+2. Follow the installation instructions and make sure Docker is running.
+3. (Optional) Test your installation by running:
+   ```sh
+   docker --version
+   docker-compose --version
+   ```
+
+---
+
+## Service Setup
+
+### OCR Service (Node.js)
+
+```bash
+cd ocr_service
+cp .env.example .env
+npm install
+npm start           # or: docker-compose up ocr
 ```
 
-### 4. Install Node.js Dependencies
+### Java API (Spring Boot)
 
-In the backend folder, run:
-
-```sh
-npm install mysql2 dotenv
+```bash
+cd backend-java-springboot
+cp src/main/resources/application.yml.example src/main/resources/application.yml
+./mvnw spring-boot:run   # or: docker-compose up java-api
 ```
 
-### 5. Sample MySQL Connection (Node.js)
+### Django API (Python)
 
-```js
-// filepath: src/index.js
-const mysql = require('mysql2');
-require('dotenv').config();
-
-const connection = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT
-});
-
-connection.connect((err) => {
-  if (err) {
-    console.error('Error connecting to MySQL:', err);
-    return;
-  }
-  console.log('Connected to MySQL database!');
-});
+```bash
+cd backend-python-django
+cp .env.example .env
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver 8001   # or: docker-compose up django-api
 ```
+
+### Frontend (React/Next.js)
+
+```bash
+cd frontend-react/merbanhub
+cp .env.local.example .env.local
+npm install
+npm run dev        # or: docker-compose up frontend
+```
+
+### Database (MySQL)
+
+- Uses the Docker service defined below
+
+---
+
+## Running Locally
+
+Bring up all services in one go:
+
+```bash
+docker-compose up --build
+```
+
+**Services:**
+
+- db (MySQL on 3306)
+- ocr_service (folder watcher & OCR)
+- java-api (Spring Boot on 8080)
+- django-api (Django on 8001)
+- frontend (React on 3000)
+
+**Verify health:**
+
+- [http://localhost:8080/api/health](http://localhost:8080/api/health)
+- [http://localhost:8001/health](http://localhost:8001/health)
+
+---
+
+#### Manual MySQL Setup (if not using Docker)
+
+1. Install MySQL 8.
+2. Create the database and user:
+
+   ```sql
+   CREATE DATABASE merbanhub_db;
+   CREATE USER 'merbanhub_user'@'localhost' IDENTIFIED BY 'yourpassword';
+   GRANT ALL PRIVILEGES ON merbanhub_db.* TO 'merbanhub_user'@'localhost';
+   FLUSH PRIVILEGES;
+   ```
+
+3. Set your `.env` or connection variables as needed.
 
 ---
 
 ## Development Workflow
 
-### 1. Pull Latest Changes
+### Sync
 
 ```sh
 git checkout dev
 git pull origin dev
 ```
 
-### 2. Create a Feature Branch
+### Branch
 
 ```sh
-git checkout -b feature/your-feature-name
+git checkout -b feat/your-feature
 ```
 
-### 3. Make Changes & Commit
+### Code & Commit
 
 ```sh
 git add .
-git commit -m "Describe your changes"
-git push origin feature/your-feature-name
+git commit -m "feat: brief description"
 ```
 
-### 4. Open a Pull Request
+### Push & PR
 
-- Go to GitHub and open a pull request from your feature branch into `dev`.
+```sh
+git push -u origin feat/your-feature
+```
 
----
-
-## Scripts
-
-- `npm run lint` — Lint the codebase
-- `npm test` — Run tests
-- `npm run check` — Lint and test
-
----
-
-## Coding Standards
-
-- Use ESLint for code style.
-- Write clear commit messages.
-- Ensure all tests pass before submitting a pull request.
+→ Open a Pull Request into dev, request reviews, pass CI.
 
 ---
 
 ## Contributing
 
-1. Fork the repository (if needed).
-2. Create a feature branch from `dev`.
-3. Submit a pull request to `dev`.
-4. Request a review from a team member.
+- **Branch naming:** `feat/`, `fix/`, `chore/` prefixes
+- **Lint:**
+
+  ```sh
+  npm run lint
+  ```
+
+- **Tests:**
+
+  ```sh
+  npm test
+  ```
+
+- **Commit messages:** clear, imperative, prefixed by type (`feat:`, `fix:`)
+- **Protect dev:** all merges require Pull Requests, approvals, and passing CI.
 
 ---
 
 ## License
 
 ISC
-
----
-
-_For questions, contact the project manager or open an issue._
-
----
-
-## database/
-
-### Setup MySQL
-
-1. Install MySQL 8 on your computer, or use Docker by running:
-
-   ```sh
-   docker-compose up db
-   ```
-
-2. Create the database (if not created automatically):
-
-   ```sh
-   mysql -u merbanhub_user -pyourpassword -e "CREATE DATABASE merbanhub_db;"
-   ```
-
-3. (Optional) Use a MySQL client like MySQL Workbench or DBeaver to connect and manage your database.
-4. The database will be available at `localhost:3306` with the credentials set in your `.env` file or `docker-compose.yml`.
