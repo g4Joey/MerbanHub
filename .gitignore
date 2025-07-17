@@ -18,6 +18,10 @@ env/
 processed/
 incoming-scan/
 
+# OS/temp files
+.DS_Store
+Thumbs.db
+
 # === Node ===
 node_modules/
 
@@ -29,7 +33,3 @@ copilot-notes.txt
 
 # === Executables / Installers ===
 DockerDesktopInstaller.exe
-
-# === System files ===
-.DS_Store
-Thumbs.db
