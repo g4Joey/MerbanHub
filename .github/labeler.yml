@@ -1,5 +1,16 @@
 frontend:
   - 'frontend-react/**'
+backend:
+  - 'backend_django/**'
+docs:
+  - '*.md'
+ocr:
+  - 'ocr_watcher.py'
+  - 'test_ocr.py'
+  - 'test_pdf2image.py'
+
+frontend:
+  - 'frontend-react/**'
 backend-java:
   - 'backend-java-springboot/**'
 backend-python:
