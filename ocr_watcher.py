@@ -66,7 +66,14 @@ def route_file(src_path):
         new_filename = filename  # keep original
         dest_dir = FAILED_DIR
 
+
+    # Ensure unique filename at destination
     dest_path = os.path.join(dest_dir, new_filename)
+    base, extn = os.path.splitext(new_filename)
+    counter = 1
+    while os.path.exists(dest_path):
+        dest_path = os.path.join(dest_dir, f"{base}_{counter}{extn}")
+        counter += 1
 
     if dest_dir == FAILED_DIR:
         # Just move the file as-is
@@ -101,41 +108,62 @@ def route_file(src_path):
 # === Watcher ===
 
 
+
+import threading
+
 class ScanHandler(FileSystemEventHandler):
-    def _process(self, path):
-        if not path.lower().endswith((".pdf", ".png", ".jpg", ".jpeg")):
-            return
-        # Add a small initial delay to give the OS time to finish file operations
-        time.sleep(0.3)
-        last_exception = None
-        for attempt in range(10):
-            try:
-                if not os.path.isfile(path):
-                    raise FileNotFoundError(f"{path} not found (attempt {attempt+1})")
-                with open(path, 'rb') as f:
-                    f.read(1)
-                route_file(path)
-                return
-            except Exception as e:
-                last_exception = e
-                time.sleep(0.5)
-        print(f"[ERROR] Failed to process {path} after multiple attempts: {last_exception}")
+    _lock = threading.Lock()
+    _timer = None
+
+    def _delayed_batch_process(self):
+        with self._lock:
+            ScanHandler._timer = None
+        time.sleep(5)  # Wait for all files to finish copying
+        files = [f for f in os.listdir(SCAN_DIR) if f.lower().endswith((".pdf", ".png", ".jpg", ".jpeg"))]
+        for fname in files:
+            fpath = os.path.join(SCAN_DIR, fname)
+            if not os.path.isfile(fpath):
+                # File was already moved/processed, skip
+                continue
+            # Retry logic for each file
+            last_exception = None
+            for attempt in range(10):
+                try:
+                    if not os.path.isfile(fpath):
+                        # File was moved during processing, skip further attempts
+                        break
+                    with open(fpath, 'rb') as f:
+                        f.read(1)
+                    route_file(fpath)
+                    break
+                except Exception as e:
+                    last_exception = e
+                    time.sleep(0.5)
+            else:
+                print(f"[ERROR] Failed to process {fpath} after multiple attempts: {last_exception}")
+
+    def _schedule_batch(self):
+        with self._lock:
+            if ScanHandler._timer is not None:
+                ScanHandler._timer.cancel()
+            ScanHandler._timer = threading.Timer(0.5, self._delayed_batch_process)
+            ScanHandler._timer.start()
 
     def on_created(self, event):
         if event.is_directory:
             return
-        self._process(event.src_path)
+        self._schedule_batch()
 
     def on_moved(self, event):
         if event.is_directory:
             return
-        self._process(event.dest_path)
+        self._schedule_batch()
 
     def on_modified(self, event):
-        # Optionally process modified files (uncomment if needed)
+        # Optionally process modified files
         # if event.is_directory:
         #     return
-        # self._process(event.src_path)
+        # self._schedule_batch()
         pass
 
 def start_watcher():
