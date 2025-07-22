@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: merbanhub-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: "@Sweetie2566"
+      MYSQL_DATABASE: merbanhub_db
+      MYSQL_USER: merbanhub_user
+      MYSQL_PASSWORD: "123UMBcapital"
+    ports:
+      - "3306:3306"
+    volumes:
+      - merbanhub_db_data:/var/lib/mysql
+    networks:
+      - merbanhub_net
+
+volumes:
+  merbanhub_db_data:
+
+networks:
+  merbanhub_net:
+    driver: bridge
