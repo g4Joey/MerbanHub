@@ -1,6 +1,5 @@
 package com.murbancapital.backend.dto;
 
-import com.murbancapital.backend.model.Document;
 import lombok.*;
 
 import java.util.List;
@@ -10,10 +9,9 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class SearchResponse {
-    private List<Document> documents;
+    private List<Document> documents; // Use dto.Document
     private long total;
     private int page;
     private int pageSize;
     private int totalPages;
 }
-

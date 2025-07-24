@@ -2,134 +2,106 @@ package com.murbancapital.backend.service;
 
 import com.murbancapital.backend.dto.SearchFilters;
 import com.murbancapital.backend.dto.SearchResponse;
-import com.murbancapital.backend.model.Document;
+import com.murbancapital.backend.dto.Document; // Use the new DTO
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 
 import jakarta.annotation.PostConstruct;
-import java.time.LocalDate;
+import java.io.IOException;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class DocumentSearchService {
+        private List<Document> documents = Collections.synchronizedList(new ArrayList<>());
 
-    private List<Document> documents = new ArrayList<>();
+        @Value("${ocr.base.path}")
+        private String ocrBasePath;
 
-    @PostConstruct
-    public void loadMockData() {
-        // ——————————————————————————————
-        // Copy-paste Lucius’s mockDocuments here:
-        documents = List.of(
-                Document.builder()
-                        .id("1")
-                        .fileName("Investment_Agreement_2024_Q1.pdf")
-                        .clientName("Acme Corporation")
-                        .accountNumber("ACC-001-2024")
-                        .department("Investment")
-                        .fundDate(LocalDate.parse("2024-01-15"))
-                        .fileExtension("pdf")
-                        .dateModified(LocalDate.parse("2024-01-20"))
-                        .fileSize(2048000)
-                        .ocrConfidence(95)
-                        .indexStatus("Indexed")
-                        .snippet("This investment agreement outlines the terms and conditions for the Q1 2024 funding round...")
-                        .filePath("/documents/investment/2024/q1/investment_agreement.pdf")
-                        .build()
-                // … repeat for documents 2–5 …
-        );
-    }
+        private static final String FULLY_INDEXED_DIR = "fully_indexed";
+        private static final String PARTIALLY_INDEXED_DIR = "partially_indexed";
+        private static final String FAILED_DIR = "failed";
 
-    public SearchResponse search(SearchFilters f) {
-        // Start with the full list
-        List<Document> filtered = new ArrayList<>(documents);
-
-        // Apply each filter if present:
-        if (f.getClientName() != null && !f.getClientName().isBlank()) {
-            String q = f.getClientName().toLowerCase();
-            filtered = filtered.stream()
-                    .filter(d -> d.getClientName().toLowerCase().contains(q))
-                    .collect(Collectors.toList());
-        }
-        if (f.getAccountNumber() != null) {
-            filtered = filtered.stream()
-                    .filter(d -> d.getAccountNumber().equals(f.getAccountNumber()))
-                    .collect(Collectors.toList());
-        }
-        if (f.getDepartment() != null) {
-            filtered = filtered.stream()
-                    .filter(d -> d.getDepartment().equals(f.getDepartment()))
-                    .collect(Collectors.toList());
-        }
-        if (f.getFundDateStart() != null) {
-            filtered = filtered.stream()
-                    .filter(d -> !d.getFundDate().isBefore(f.getFundDateStart()))
-                    .collect(Collectors.toList());
-        }
-        if (f.getFundDateEnd() != null) {
-            filtered = filtered.stream()
-                    .filter(d -> !d.getFundDate().isAfter(f.getFundDateEnd()))
-                    .collect(Collectors.toList());
-        }
-        if (f.getFileExtensions() != null && !f.getFileExtensions().isEmpty()) {
-            filtered = filtered.stream()
-                    .filter(d -> f.getFileExtensions().contains(d.getFileExtension()))
-                    .collect(Collectors.toList());
-        }
-        if (f.getDateModifiedStart() != null) {
-            filtered = filtered.stream()
-                    .filter(d -> !d.getDateModified().isBefore(f.getDateModifiedStart()))
-                    .collect(Collectors.toList());
-        }
-        if (f.getDateModifiedEnd() != null) {
-            filtered = filtered.stream()
-                    .filter(d -> !d.getDateModified().isAfter(f.getDateModifiedEnd()))
-                    .collect(Collectors.toList());
-        }
-        if (f.getFileSizeMin() != null) {
-            filtered = filtered.stream()
-                    .filter(d -> d.getFileSize() >= f.getFileSizeMin() * 1024)
-                    .collect(Collectors.toList());
-        }
-        if (f.getFileSizeMax() != null) {
-            filtered = filtered.stream()
-                    .filter(d -> d.getFileSize() <= f.getFileSizeMax() * 1024)
-                    .collect(Collectors.toList());
-        }
-        if (f.getOcrConfidenceMin() != null) {
-            filtered = filtered.stream()
-                    .filter(d -> d.getOcrConfidence() >= f.getOcrConfidenceMin())
-                    .collect(Collectors.toList());
-        }
-        if (f.getIndexStatus() != null) {
-            filtered = filtered.stream()
-                    .filter(d -> d.getIndexStatus().equals(f.getIndexStatus()))
-                    .collect(Collectors.toList());
-        }
-        if (f.getFullTextSearch() != null && !f.getFullTextSearch().isBlank()) {
-            String q = f.getFullTextSearch().toLowerCase();
-            filtered = filtered.stream()
-                    .filter(d -> d.getFileName().toLowerCase().contains(q)
-                            || d.getSnippet().toLowerCase().contains(q))
-                    .collect(Collectors.toList());
+        @PostConstruct
+        public void init() {
+                System.out.println("[DocumentSearchService] Initializing with OCR base path: " + ocrBasePath);
+                scanOcrFolders();
         }
 
-        // — Pagination & sorting (simple in‑memory)
-        int page    = f.getPage()    == null ? 1 : f.getPage();
-        int size    = f.getPageSize()== null ? 20 : f.getPageSize();
-        int fromIdx = (page - 1) * size;
-        int toIdx   = Math.min(fromIdx + size, filtered.size());
+        public void scanOcrFolders() {
+                List<Document> newDocuments = new ArrayList<>();
+                List<Path> directoriesToScan = List.of(
+                                Paths.get(ocrBasePath, FULLY_INDEXED_DIR),
+                                Paths.get(ocrBasePath, PARTIALLY_INDEXED_DIR),
+                                Paths.get(ocrBasePath, FAILED_DIR));
+                for (Path dirPath : directoriesToScan) {
+                        if (Files.exists(dirPath) && Files.isDirectory(dirPath)) {
+                                try (Stream<Path> paths = Files.list(dirPath)) {
+                                        paths.filter(Files::isRegularFile)
+                                                        .forEach(filePath -> {
+                                                                try {
+                                                                        BasicFileAttributes attr = Files.readAttributes(
+                                                                                        filePath,
+                                                                                        BasicFileAttributes.class);
+                                                                        String fileName = filePath.getFileName()
+                                                                                        .toString();
+                                                                        long fileSize = attr.size();
+                                                                        long lastModified = attr.lastModifiedTime()
+                                                                                        .toMillis();
+                                                                        String absolutePath = filePath.toAbsolutePath()
+                                                                                        .toString();
+                                                                        Document doc = new Document(fileName, fileSize,
+                                                                                        lastModified, absolutePath);
+                                                                        newDocuments.add(doc);
+                                                                } catch (IOException e) {
+                                                                        System.err.println(
+                                                                                        "[ERROR] Could not read attributes for file: "
+                                                                                                        + filePath
+                                                                                                        + " - "
+                                                                                                        + e.getMessage());
+                                                                }
+                                                        });
+                                } catch (IOException e) {
+                                        System.err.println("[ERROR] Could not list files in directory: " + dirPath
+                                                        + " - " + e.getMessage());
+                                }
+                        } else {
+                                System.out.println("[WARNING] OCR directory not found or not a directory: " + dirPath);
+                        }
+                }
+                synchronized (documents) {
+                        documents.clear();
+                        documents.addAll(newDocuments);
+                        System.out.println("[DocumentSearchService] Rescanned. Total documents loaded: "
+                                        + documents.size());
+                }
+        }
 
-        List<Document> pageList = fromIdx >= filtered.size()
-                ? Collections.emptyList()
-                : filtered.subList(fromIdx, toIdx);
-
-        return SearchResponse.builder()
-                .documents(pageList)
-                .total(filtered.size())
-                .page(page)
-                .pageSize(size)
-                .totalPages((int)Math.ceil((double)filtered.size() / size))
-                .build();
-    }
+        public SearchResponse search(SearchFilters f) {
+                List<Document> filtered = new ArrayList<>(documents);
+                // You can add simple filters here if needed, e.g. by name
+                if (f.getClientName() != null && !f.getClientName().isBlank()) {
+                        String q = f.getClientName().toLowerCase();
+                        filtered = filtered.stream()
+                                        .filter(d -> d.getName() != null && d.getName().toLowerCase().contains(q))
+                                        .collect(Collectors.toList());
+                }
+                // Pagination (optional)
+                int page = f.getPage() == null ? 1 : f.getPage();
+                int size = f.getPageSize() == null ? 20 : f.getPageSize();
+                int fromIdx = (page - 1) * size;
+                int toIdx = Math.min(fromIdx + size, filtered.size());
+                List<Document> pageList = fromIdx >= filtered.size() ? Collections.emptyList()
+                                : filtered.subList(fromIdx, toIdx);
+                return SearchResponse.builder()
+                                .documents(pageList)
+                                .total(filtered.size())
+                                .page(page)
+                                .pageSize(size)
+                                .totalPages((int) Math.ceil((double) filtered.size() / size))
+                                .build();
+        }
 }
-

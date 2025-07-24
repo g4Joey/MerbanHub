@@ -27,4 +27,12 @@ public class SearchFilters {
     private Integer pageSize;
     private String sortBy;
     private String sortOrder;
+    
+    public Integer getOcrConfidenceMin() {
+        return ocrConfidenceMin;
+    }
+
+    public void setOcrConfidenceMin(Integer ocrConfidenceMin) {
+        this.ocrConfidenceMin = ocrConfidenceMin;
+    }
 }

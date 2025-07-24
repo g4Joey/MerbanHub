@@ -30,7 +30,7 @@ export async function searchDocuments(
         // If parsing JSON fails, just use status text
         errorDetail = response.statusText;
       }
-      console.error("API call failed:", errorDetail);
+      console.log("API call failed:", errorDetail);
       throw new Error(`Failed to fetch documents: ${errorDetail}`);
     }
 
