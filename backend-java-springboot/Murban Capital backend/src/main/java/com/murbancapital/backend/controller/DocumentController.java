@@ -16,6 +16,8 @@ public class DocumentController {
 
     @PostMapping("/search")
     public SearchResponse searchDocuments(@RequestBody SearchFilters filters) {
+        // System.out.println("[BACKEND] Received search request with filters: " + filters);
+        System.out.println(searchService.search(filters));
         return searchService.search(filters);
     }
 }
