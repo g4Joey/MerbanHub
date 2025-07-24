@@ -102,6 +102,23 @@ public class DocumentSearchService {
                                 .page(page)
                                 .pageSize(size)
                                 .totalPages((int) Math.ceil((double) filtered.size() / size))
+                                .clientName(f.getClientName() == null ? "" : f.getClientName())
+                                .accountNumber(f.getAccountNumber() == null ? "" : f.getAccountNumber())
+                                .department(f.getDepartment() == null ? "" : f.getDepartment())
+                                .fundDateStart(f.getFundDateStart() == null ? "" : f.getFundDateStart().toString())
+                                .fundDateEnd(f.getFundDateEnd() == null ? "" : f.getFundDateEnd().toString())
+                                .fileExtensions(f.getFileExtensions() == null ? List.of() : f.getFileExtensions())
+                                .dateModifiedStart(f.getDateModifiedStart() == null ? ""
+                                                : f.getDateModifiedStart().toString())
+                                .dateModifiedEnd(
+                                                f.getDateModifiedEnd() == null ? "" : f.getDateModifiedEnd().toString())
+                                .fileSizeMin(f.getFileSizeMin() == null ? 0L : f.getFileSizeMin())
+                                .fileSizeMax(f.getFileSizeMax() == null ? 0L : f.getFileSizeMax())
+                                .ocrConfidenceMin(f.getOcrConfidenceMin() == null ? 0 : f.getOcrConfidenceMin())
+                                .indexStatus(f.getIndexStatus() == null ? "" : f.getIndexStatus())
+                                .fullTextSearch(f.getFullTextSearch() == null ? "" : f.getFullTextSearch())
+                                .sortBy(f.getSortBy() == null ? "" : f.getSortBy())
+                                .sortOrder(f.getSortOrder() == null ? "" : f.getSortOrder())
                                 .build();
         }
 }
