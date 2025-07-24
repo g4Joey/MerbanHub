@@ -1,5 +1,5 @@
 "use client"
-
+//search-filters.tsx  
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -64,7 +64,7 @@ export function SearchFilters({ filters, onFilterChange }: SearchFiltersProps) {
   return (
     <div className="space-y-6">
       {/* Full Text Search */}
-      <div className="space-y-2">
+      {/* <div className="space-y-2">
         <Label htmlFor="fullTextSearch">Full Text Search</Label>
         <Input
           id="fullTextSearch"
@@ -72,7 +72,7 @@ export function SearchFilters({ filters, onFilterChange }: SearchFiltersProps) {
           value={filters.fullTextSearch}
           onChange={(e) => onFilterChange({ fullTextSearch: e.target.value })}
         />
-      </div>
+      </div> */}
 
       <Separator />
 
@@ -98,123 +98,7 @@ export function SearchFilters({ filters, onFilterChange }: SearchFiltersProps) {
         />
       </div>
 
-      {/* Department */}
-      <div className="space-y-2">
-        <Label>Department</Label>
-        <Select value={filters.department} onValueChange={(value) => onFilterChange({ department: value })}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select department..." />
-          </SelectTrigger>
-          <SelectContent>
-            {departments.map((dept) => (
-              <SelectItem key={dept} value={dept}>
-                {dept}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <Separator />
-
-      {/* Fund Date Range */}
-      <div className="space-y-2">
-        <Label>Fund Date Range</Label>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <Label htmlFor="fundDateStart" className="text-xs text-muted-foreground">
-              Start Date
-            </Label>
-            <Input
-              id="fundDateStart"
-              type="date"
-              value={filters.fundDateStart}
-              onChange={(e) => onFilterChange({ fundDateStart: e.target.value })}
-            />
-          </div>
-          <div>
-            <Label htmlFor="fundDateEnd" className="text-xs text-muted-foreground">
-              End Date
-            </Label>
-            <Input
-              id="fundDateEnd"
-              type="date"
-              value={filters.fundDateEnd}
-              onChange={(e) => onFilterChange({ fundDateEnd: e.target.value })}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Date Modified Range */}
-      <div className="space-y-2">
-        <Label>Date Modified Range</Label>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <Label htmlFor="dateModifiedStart" className="text-xs text-muted-foreground">
-              Start Date
-            </Label>
-            <Input
-              id="dateModifiedStart"
-              type="date"
-              value={filters.dateModifiedStart}
-              onChange={(e) => onFilterChange({ dateModifiedStart: e.target.value })}
-            />
-          </div>
-          <div>
-            <Label htmlFor="dateModifiedEnd" className="text-xs text-muted-foreground">
-              End Date
-            </Label>
-            <Input
-              id="dateModifiedEnd"
-              type="date"
-              value={filters.dateModifiedEnd}
-              onChange={(e) => onFilterChange({ dateModifiedEnd: e.target.value })}
-            />
-          </div>
-        </div>
-      </div>
-
-      <Separator />
-
-      {/* File Extensions */}
-      <div className="space-y-2">
-        <Label>File Extensions</Label>
-        <div className="grid grid-cols-2 gap-2">
-          {fileExtensions.map((ext) => (
-            <div key={ext.value} className="flex items-center space-x-2">
-              <Checkbox
-                id={ext.value}
-                checked={filters.fileExtensions.includes(ext.value)}
-                onCheckedChange={(checked) => handleFileExtensionChange(ext.value, checked as boolean)}
-              />
-              <Label htmlFor={ext.value} className="text-sm font-normal">
-                {ext.label}
-              </Label>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* File Size Range */}
-      <div className="space-y-2">
-        <Label>File Size (KB)</Label>
-        <div className="px-2">
-          <Slider
-            value={[filters.fileSizeMin, filters.fileSizeMax]}
-            onValueChange={([min, max]) => onFilterChange({ fileSizeMin: min, fileSizeMax: max })}
-            max={100000}
-            min={0}
-            step={100}
-            className="w-full"
-          />
-          <div className="flex justify-between text-xs text-muted-foreground mt-1">
-            <span>{filters.fileSizeMin} KB</span>
-            <span>{filters.fileSizeMax} KB</span>
-          </div>
-        </div>
-      </div>
-
+      
     </div>
   );
 }

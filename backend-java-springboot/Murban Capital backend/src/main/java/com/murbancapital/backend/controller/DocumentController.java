@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/documents")
-@CrossOrigin(origins = "http://localhost:3000")  // adjust for production
+@CrossOrigin(origins = "*")  // adjust for production
 public class DocumentController {
 
     @Autowired
