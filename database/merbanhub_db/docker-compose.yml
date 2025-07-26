@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: merbanhub-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: "@Sweetie2566"       # Root password for maintenance
+      MYSQL_DATABASE: merbanhub_db              # Auto-create main DB
+      MYSQL_USER: Merbanhub_user                # App user (used by backend)
+      MYSQL_PASSWORD: "123UMBcapital"           # App user password
+    ports:
+      - "3306:3306"                             # Expose MySQL for LAN access
+    volumes:
+      - merbanhub_db_data:/var/lib/mysql        # Persistent database storage
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro   # Optional seed script
+    networks:
+      - merbanhub_net
+
+volumes:
+  merbanhub_db_data:
+
+networks:
+  merbanhub_net:
+    driver: bridge
