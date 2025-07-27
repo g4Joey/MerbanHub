@@ -1,0 +1,201 @@
+{
+  "searchRequest": {
+    "type": "object",
+    "properties": {
+      "clientName": {
+        "type": "string",
+        "description": "Case-insensitive substring search for client name"
+      },
+      "accountNumber": {
+        "type": "string",
+        "description": "Exact match for account number"
+      },
+      "department": {
+        "type": "string",
+        "description": "Exact match for department"
+      },
+      "fundDateStart": {
+        "type": "string",
+        "format": "date",
+        "description": "Start date for fund date range filter (ISO 8601 format)"
+      },
+      "fundDateEnd": {
+        "type": "string",
+        "format": "date",
+        "description": "End date for fund date range filter (ISO 8601 format)"
+      },
+      "fileExtensions": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Array of file extensions to filter by (e.g., ['pdf', 'docx'])"
+      },
+      "dateModifiedStart": {
+        "type": "string",
+        "format": "date",
+        "description": "Start date for modification date range filter"
+      },
+      "dateModifiedEnd": {
+        "type": "string",
+        "format": "date",
+        "description": "End date for modification date range filter"
+      },
+      "fileSizeMin": {
+        "type": "integer",
+        "minimum": 0,
+        "description": "Minimum file size in KB"
+      },
+      "fileSizeMax": {
+        "type": "integer",
+        "description": "Maximum file size in KB"
+      },
+      "ocrConfidenceMin": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 100,
+        "description": "Minimum OCR confidence percentage"
+      },
+      "indexStatus": {
+        "type": "string",
+        "enum": ["Indexed", "Pending", "Error", "Processing"],
+        "description": "Document indexing status"
+      },
+      "fullTextSearch": {
+        "type": "string",
+        "description": "Full-text search query across document content"
+      },
+      "page": {
+        "type": "integer",
+        "minimum": 1,
+        "default": 1,
+        "description": "Page number for pagination"
+      },
+      "pageSize": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100,
+        "default": 20,
+        "description": "Number of results per page"
+      },
+      "sortBy": {
+        "type": "string",
+        "enum": ["fileName", "dateModified", "fileSize", "ocrConfidence", "fundDate"],
+        "default": "dateModified",
+        "description": "Field to sort results by"
+      },
+      "sortOrder": {
+        "type": "string",
+        "enum": ["asc", "desc"],
+        "default": "desc",
+        "description": "Sort order"
+      }
+    }
+  },
+  "searchResponse": {
+    "type": "object",
+    "required": ["documents", "total", "page", "pageSize", "totalPages"],
+    "properties": {
+      "documents": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/document"
+        }
+      },
+      "total": {
+        "type": "integer",
+        "description": "Total number of documents matching the search criteria"
+      },
+      "page": {
+        "type": "integer",
+        "description": "Current page number"
+      },
+      "pageSize": {
+        "type": "integer",
+        "description": "Number of results per page"
+      },
+      "totalPages": {
+        "type": "integer",
+        "description": "Total number of pages"
+      }
+    }
+  },
+  "definitions": {
+    "document": {
+      "type": "object",
+      "required": [
+        "id",
+        "fileName",
+        "clientName",
+        "accountNumber",
+        "department",
+        "fundDate",
+        "fileExtension",
+        "dateModified",
+        "fileSize",
+        "ocrConfidence",
+        "indexStatus",
+        "filePath"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique document identifier"
+        },
+        "fileName": {
+          "type": "string",
+          "description": "Original file name"
+        },
+        "clientName": {
+          "type": "string",
+          "description": "Name of the client associated with the document"
+        },
+        "accountNumber": {
+          "type": "string",
+          "description": "Account number associated with the document"
+        },
+        "department": {
+          "type": "string",
+          "description": "Department that owns or created the document"
+        },
+        "fundDate": {
+          "type": "string",
+          "format": "date",
+          "description": "Fund date associated with the document"
+        },
+        "fileExtension": {
+          "type": "string",
+          "description": "File extension (without dot, e.g., 'pdf', 'docx')"
+        },
+        "dateModified": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last modification timestamp"
+        },
+        "fileSize": {
+          "type": "integer",
+          "description": "File size in bytes"
+        },
+        "ocrConfidence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "OCR confidence percentage"
+        },
+        "indexStatus": {
+          "type": "string",
+          "enum": ["Indexed", "Pending", "Error", "Processing"],
+          "description": "Current indexing status"
+        },
+        "filePath": {
+          "type": "string",
+          "description": "Storage path or URL for the document"
+        },
+        "snippet": {
+          "type": "string",
+          "description": "Text snippet/preview of document content (optional)"
+        }
+      }
+    }
+  }
+}
