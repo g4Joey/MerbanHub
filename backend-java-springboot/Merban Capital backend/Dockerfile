@@ -5,10 +5,10 @@ FROM eclipse-temurin:17-jdk-alpine
 WORKDIR /app
 
 # Copy the built JAR file into the container
-COPY target/Murban-Capital-backend-0.0.1-SNAPSHOT.jar Murban-Capital-backend-0.0.1-SNAPSHOT.jar
+COPY target/Merban-Capital-backend-0.0.1-SNAPSHOT.jar Merban-Capital-backend-0.0.1-SNAPSHOT.jar
 
 # Expose the port your app will run on
 EXPOSE 8080
 
 # Run the app
-ENTRYPOINT ["java", "-jar", "Murban-Capital-backend-0.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java", "-jar", "Merban-Capital-backend-0.0.1-SNAPSHOT.jar"]

@@ -8,11 +8,11 @@
         <version>3.5.3</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.MurbanCapital</groupId>
-    <artifactId>Murban-Capital-backend</artifactId>
+    <groupId>com.MerbanCapital</groupId>
+    <artifactId>Merban-Capital-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>Murban Capital backend</name>
-    <description>Murban Capital backend</description>
+    <name>Merban Capital backend</name>
+    <description>Merban Capital backend</description>
     <url/>
     <licenses>
         <license/>
