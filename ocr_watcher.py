@@ -8,8 +8,38 @@ from pdf2image import convert_from_path
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import threading
+from dotenv import load_dotenv
+import mysql.connector
 
-# === Retry-safe file move ===
+load_dotenv()
+
+# DB Config
+DB_CONFIG = {
+    "host": os.getenv("DB_HOST", "localhost"),
+    "port": int(os.getenv("DB_PORT", 3306)),
+    "user": os.getenv("MYSQL_USER"),
+    "password": os.getenv("MYSQL_PASSWORD"),
+    "database": os.getenv("MYSQL_DATABASE")
+}
+
+def insert_metadata_to_db(client_name, account_number, filename, filepath):
+    try:
+        conn = mysql.connector.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO scanned_documents (client_name, account_number, filename, filepath)
+            VALUES (%s, %s, %s, %s)
+        """, (client_name, account_number, filename, filepath))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print(f"[DB] Inserted: {client_name}, {account_number}")
+    except mysql.connector.Error as err:
+        print(f"[DB ERROR] Failed to insert into DB: {err}")
+
+
+
+# === Retry-safe move ===
 def safe_move_file(src, dest, max_retries=3, delay=1):
     for attempt in range(1, max_retries + 1):
         try:
@@ -26,15 +56,17 @@ SCAN_DIR            = "incoming-scan"
 FULLY_INDEXED_DIR   = "fully_indexed"
 PARTIAL_INDEXED_DIR = "partially_indexed"
 FAILED_DIR          = "failed"
+PENDING_DIR         = "pending"
 
 # Ensure directories exist
-for d in (FULLY_INDEXED_DIR, PARTIAL_INDEXED_DIR, FAILED_DIR):
+for d in (FULLY_INDEXED_DIR, PARTIAL_INDEXED_DIR, FAILED_DIR, PENDING_DIR):
     os.makedirs(d, exist_ok=True)
 
-# === OCR Tools Paths ===
+# === OCR Tools ===
 POPPLER_PATH  = r"C:\poppler-24.08.0\Library\bin"
 TESSERACT_CMD = r"C:\Users\KC-User\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
 pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
+CONFIDENCE_THRESHOLD = 99
 
 # === OCR & Parsing ===
 def extract_text(path):
@@ -50,78 +82,122 @@ def extract_text(path):
         print(f"[ERROR] Text extraction failed for {path}: {e}")
         return ""
 
-def parse_fields(text):
+def parse_fields_with_confidence(path):
+    ext = os.path.splitext(path)[1].lower()
+    try:
+        if ext == ".pdf":
+            pages = convert_from_path(path, poppler_path=POPPLER_PATH)
+            ocr_results = [pytesseract.image_to_data(p, output_type=pytesseract.Output.DICT) for p in pages]
+        else:
+            img = Image.open(path).convert("RGB")
+            ocr_results = [pytesseract.image_to_data(img, output_type=pytesseract.Output.DICT)]
+    except Exception as e:
+        print(f"[ERROR] OCR with confidence failed: {e}")
+        return None, None, 0, 0
+
     name_labels = [
-        r"Name of Account Holder\s*\(corporate entities\)",
-        r"Print name", r"Other names?", r"Other name",
-        r"First names?", r"First name", r"Surname\s*\(individual\)",
-        r"Surnames", r"Name"
+        r"Name of Account Holder\s*\(corporate entities\)", r"Print name",
+        r"Other names?", r"Other name", r"First names?", r"First name",
+        r"Surname\s*\(individual\)", r"Surnames", r"Name"
     ]
     account_labels = [
-        r"Client CSD Securities Account No",
-        r"Account Number", r"Account number",
-        r"Account no", r"Account no\."
+        r"Client CSD Securities Account No", r"Account Number",
+        r"Account number", r"Account no", r"Account no\."
     ]
+    name_pattern = re.compile(rf"(?:{'|'.join(name_labels)})\s*[:\-]?\s*([A-Za-z ]+)", re.IGNORECASE)
+    acc_pattern  = re.compile(rf"(?:{'|'.join(account_labels)})\s*[:\-]?\s*([A-Za-z0-9\-]+)", re.IGNORECASE)
 
-    name_pattern = rf"(?:{'|'.join(name_labels)})\s*[:\-]?\s*([A-Za-z ]+)"
-    account_pattern = rf"(?:{'|'.join(account_labels)})\s*[:\-]?\s*([A-Za-z0-9\-]+)"
+    full_text = ""
+    for result in ocr_results:
+        full_text += " ".join(result["text"]) + " "
 
-    m_name = re.search(name_pattern, text, re.IGNORECASE)
-    m_acc  = re.search(account_pattern, text, re.IGNORECASE)
+    name_match = name_pattern.search(full_text)
+    acc_match = acc_pattern.search(full_text)
 
-    name    = m_name.group(1).strip().replace(" ", "_") if m_name else None
-    account = m_acc.group(1).strip() if m_acc else None
-    return name, account
+    name = name_match.group(1).strip().replace(" ", "_") if name_match else None
+    account = acc_match.group(1).strip() if acc_match else None
 
-# === Routing Logic ===
-def route_file(src_path):
-    filename = os.path.basename(src_path)
+    def extract_confidence(target):
+        if not target:
+            return 0
+        for result in ocr_results:
+            words = result["text"]
+            confs = result["conf"]
+            for word, conf in zip(words, confs):
+                if target.lower() in word.lower() and conf != "-1":
+                    return int(conf)
+        return 0
+
+    name_conf = extract_confidence(name)
+    acc_conf  = extract_confidence(account)
+
+    return name, account, name_conf, acc_conf
+
+# === Routing ===
+def route_file(path):
+    filename = os.path.basename(path)
     ext = os.path.splitext(filename)[1].lower()
-    text = extract_text(src_path)
-    name, account = parse_fields(text)
     is_image = ext in [".png", ".jpg", ".jpeg"]
 
-    if name and account:
-        new_filename = f"{name}_{account}.pdf" if is_image else f"{name}_{account}{ext}"
-        dest_dir = FULLY_INDEXED_DIR
-    elif name or account:
-        key = name or account
-        new_filename = f"{key}.pdf" if is_image else f"{key}{ext}"
-        dest_dir = PARTIAL_INDEXED_DIR
-    else:
-        new_filename = filename
-        dest_dir = FAILED_DIR
+    name, account, name_conf, acc_conf = parse_fields_with_confidence(path)
 
-    dest_path = os.path.join(dest_dir, new_filename)
-    base, extn = os.path.splitext(new_filename)
+    if name and account and name_conf >= CONFIDENCE_THRESHOLD and acc_conf >= CONFIDENCE_THRESHOLD:
+        dest_dir = FULLY_INDEXED_DIR
+        new_name = f"{name}_{account}.pdf" if is_image else f"{name}_{account}{ext}"
+    elif (name and name_conf >= CONFIDENCE_THRESHOLD) or (account and acc_conf >= CONFIDENCE_THRESHOLD):
+        dest_dir = PARTIAL_INDEXED_DIR
+        key = name if name and name_conf >= CONFIDENCE_THRESHOLD else account
+        new_name = f"{key}.pdf" if is_image else f"{key}{ext}"
+    elif name or account:
+        dest_dir = PENDING_DIR
+        key = name or account
+        new_name = f"{key}.pdf" if is_image else f"{key}{ext}"
+    else:
+        dest_dir = FAILED_DIR
+        new_name = filename
+
+    dest_path = os.path.join(dest_dir, new_name)
+    base, extn = os.path.splitext(new_name)
     counter = 1
     while os.path.exists(dest_path):
         dest_path = os.path.join(dest_dir, f"{base}_{counter}{extn}")
         counter += 1
 
-    if dest_dir == FAILED_DIR:
-        if safe_move_file(src_path, dest_path):
-            print(f"[{dest_dir.upper()}] {filename} → {new_filename}")
-        return
-
-    if is_image:
+    if is_image and dest_dir != FAILED_DIR:
         try:
-            img = Image.open(src_path).convert("RGB")
+            img = Image.open(path).convert("RGB")
             img.save(dest_path, "PDF", resolution=100.0)
-            if os.path.exists(src_path):
-                os.remove(src_path)
-            print(f"[{dest_dir.upper()}] {filename} → {new_filename} (converted to PDF)")
+            if os.path.exists(path):
+                os.remove(path)
+            print(f"[{dest_dir.upper()}] {filename} → {new_name} (converted to PDF)")
         except Exception as e:
-            print(f"[ERROR] Failed to convert {filename} to PDF: {e}")
-            if os.path.exists(src_path):
-                fallback = os.path.join(FAILED_DIR, filename)
-                safe_move_file(src_path, fallback)
-                print(f"[FAILED] {filename} → {filename}")
+            print(f"[ERROR] PDF conversion failed: {e}")
+            fallback = os.path.join(FAILED_DIR, filename)
+            safe_move_file(path, fallback)
+            print(f"[FAILED] {filename} → {filename}")
     else:
-        if safe_move_file(src_path, dest_path):
-            print(f"[{dest_dir.upper()}] {filename} → {new_filename}")
+        if safe_move_file(path, dest_path):
+            print(f"[{dest_dir.upper()}] {filename} → {new_name}")
 
-# === Watcher Handler ===
+
+    # After successful save/move, insert into DB if both name and account exist
+    if dest_dir in [FULLY_INDEXED_DIR, PARTIAL_INDEXED_DIR] and name and account:
+        try:
+            from db import insert_metadata_to_db  # put this import at the top of the file if not already
+        except ImportError:
+            print("[ERROR] Could not import DB insert function.")
+            return
+
+        insert_metadata_to_db(
+            client_name=name,
+            account_number=account,
+            filename=os.path.basename(dest_path),
+            filepath=os.path.abspath(dest_path)
+        )
+
+
+
+# === Watcher ===
 class ScanHandler(FileSystemEventHandler):
     _lock = threading.Lock()
     _timer = None
@@ -131,87 +207,73 @@ class ScanHandler(FileSystemEventHandler):
             ScanHandler._timer = None
         time.sleep(5)
         files = [f for f in os.listdir(SCAN_DIR) if f.lower().endswith((".pdf", ".png", ".jpg", ".jpeg"))]
-        for fname in files:
-            fpath = os.path.join(SCAN_DIR, fname)
-            if not os.path.isfile(fpath):
-                continue
-            for attempt in range(10):
-                try:
-                    if not os.path.isfile(fpath):
+        for f in files:
+            path = os.path.join(SCAN_DIR, f)
+            if os.path.isfile(path):
+                for _ in range(5):
+                    try:
+                        with open(path, "rb") as t:
+                            t.read(1)
+                        route_file(path)
                         break
-                    with open(fpath, 'rb') as f:
-                        f.read(1)
-                    route_file(fpath)
-                    break
-                except Exception as e:
-                    time.sleep(0.5)
-            else:
-                print(f"[ERROR] Failed to process {fpath} after multiple attempts.")
+                    except:
+                        time.sleep(0.5)
 
     def _schedule_batch(self):
         with self._lock:
-            if ScanHandler._timer is not None:
+            if ScanHandler._timer:
                 ScanHandler._timer.cancel()
             ScanHandler._timer = threading.Timer(0.5, self._delayed_batch_process)
             ScanHandler._timer.start()
 
-    def on_created(self, event):
-        if not event.is_directory:
-            self._schedule_batch()
-
-    def on_moved(self, event):
-        if not event.is_directory:
-            self._schedule_batch()
+    def on_created(self, event): self._schedule_batch() if not event.is_directory else None
+    def on_moved(self, event): self._schedule_batch() if not event.is_directory else None
 
 def start_watcher():
-    abs_path = os.path.abspath(SCAN_DIR)
-    print(f"[WATCHING] {abs_path} → (fully|partial|failed)")
     os.makedirs(SCAN_DIR, exist_ok=True)
+    print(f"[WATCHING] {os.path.abspath(SCAN_DIR)} → (fully|partial|pending|failed)")
     obs = Observer()
-    obs.schedule(ScanHandler(), path=SCAN_DIR, recursive=False)
+    obs.schedule(ScanHandler(), SCAN_DIR, recursive=False)
     obs.start()
     try:
-        while True:
-            time.sleep(1)
+        while True: time.sleep(1)
     except KeyboardInterrupt:
         obs.stop()
     obs.join()
 
+# === FastAPI Search API ===
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-# ─── Insert the FastAPI “app” definition and /search route here ───
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["GET"],
-    allow_headers=["*"],
+    allow_headers=["*"]
 )
 
 @app.get("/search")
 def search_files(q: str = Query(..., min_length=1)):
     results = []
-    for folder, status in [
-        (FULLY_INDEXED_DIR,   "fully_indexed"),
+    for folder, label in [
+        (FULLY_INDEXED_DIR, "fully_indexed"),
         (PARTIAL_INDEXED_DIR, "partially_indexed"),
+        (PENDING_DIR, "pending")
     ]:
         for fname in os.listdir(folder):
             if q.lower() in fname.lower():
                 results.append({
                     "filename": fname,
-                    "status": status,
+                    "status": label,
                     "path": os.path.join(folder, fname)
                 })
     return {"results": results}
 
-
 def main():
-    watcher_thread = threading.Thread(target=start_watcher, daemon=True)
-    watcher_thread.start()
+    threading.Thread(target=start_watcher, daemon=True).start()
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
 if __name__ == "__main__":
     main()
-
