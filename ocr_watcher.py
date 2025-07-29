@@ -1,7 +1,9 @@
+
 import os
 import time
 import shutil
 import re
+import logging
 from PIL import Image
 import pytesseract
 from pdf2image import convert_from_path
@@ -11,7 +13,16 @@ import threading
 from dotenv import load_dotenv
 import mysql.connector
 
+
 load_dotenv()
+
+# === Logging Setup ===
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] %(levelname)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
 
 # DB Config
 DB_CONFIG = {
@@ -21,6 +32,7 @@ DB_CONFIG = {
     "password": os.getenv("MYSQL_PASSWORD"),
     "database": os.getenv("MYSQL_DATABASE")
 }
+
 
 def insert_metadata_to_db(client_name, account_number, filename, filepath):
     try:
@@ -33,9 +45,11 @@ def insert_metadata_to_db(client_name, account_number, filename, filepath):
         conn.commit()
         cursor.close()
         conn.close()
-        print(f"[DB] Inserted: {client_name}, {account_number}")
+        logging.info(f"[DB] Inserted: {client_name}, {account_number}")
+        return True
     except mysql.connector.Error as err:
-        print(f"[DB ERROR] Failed to insert into DB: {err}")
+        logging.error(f"[DB ERROR] Failed to insert into DB: {err}")
+        return False
 
 
 
@@ -51,15 +65,17 @@ def safe_move_file(src, dest, max_retries=3, delay=1):
     print(f"[ALERT] Failed to move {src} to {dest} after {max_retries} attempts.")
     return False
 
-# === Directories ===
-SCAN_DIR            = "incoming-scan"
-FULLY_INDEXED_DIR   = "fully_indexed"
-PARTIAL_INDEXED_DIR = "partially_indexed"
-FAILED_DIR          = "failed"
-PENDING_DIR         = "pending"
+
+# === Directories (configurable) ===
+SCAN_DIR            = os.getenv("SCAN_DIR", "incoming-scan")
+FULLY_INDEXED_DIR   = os.getenv("FULLY_INDEXED_DIR", "fully_indexed")
+PARTIAL_INDEXED_DIR = os.getenv("PARTIAL_INDEXED_DIR", "partially_indexed")
+FAILED_DIR          = os.getenv("FAILED_DIR", "failed")
+PENDING_DIR         = os.getenv("PENDING_DIR", "pending")
+DB_FAILED_DIR       = os.getenv("DB_FAILED_DIR", "db_failed")
 
 # Ensure directories exist
-for d in (FULLY_INDEXED_DIR, PARTIAL_INDEXED_DIR, FAILED_DIR, PENDING_DIR):
+for d in (FULLY_INDEXED_DIR, PARTIAL_INDEXED_DIR, FAILED_DIR, PENDING_DIR, DB_FAILED_DIR):
     os.makedirs(d, exist_ok=True)
 
 # === OCR Tools ===
@@ -163,37 +179,39 @@ def route_file(path):
         dest_path = os.path.join(dest_dir, f"{base}_{counter}{extn}")
         counter += 1
 
+
+    file_moved = False
     if is_image and dest_dir != FAILED_DIR:
         try:
             img = Image.open(path).convert("RGB")
             img.save(dest_path, "PDF", resolution=100.0)
             if os.path.exists(path):
                 os.remove(path)
-            print(f"[{dest_dir.upper()}] {filename} → {new_name} (converted to PDF)")
+            logging.info(f"[{dest_dir.upper()}] {filename} → {new_name} (converted to PDF)")
+            file_moved = True
         except Exception as e:
-            print(f"[ERROR] PDF conversion failed: {e}")
+            logging.error(f"[ERROR] PDF conversion failed: {e}")
             fallback = os.path.join(FAILED_DIR, filename)
             safe_move_file(path, fallback)
-            print(f"[FAILED] {filename} → {filename}")
+            logging.error(f"[FAILED] {filename} → {filename}")
     else:
         if safe_move_file(path, dest_path):
-            print(f"[{dest_dir.upper()}] {filename} → {new_name}")
-
+            logging.info(f"[{dest_dir.upper()}] {filename} → {new_name}")
+            file_moved = True
 
     # After successful save/move, insert into DB if both name and account exist
-    if dest_dir in [FULLY_INDEXED_DIR, PARTIAL_INDEXED_DIR] and name and account:
-        try:
-            from db import insert_metadata_to_db  # put this import at the top of the file if not already
-        except ImportError:
-            print("[ERROR] Could not import DB insert function.")
-            return
-
-        insert_metadata_to_db(
+    if file_moved and dest_dir in [FULLY_INDEXED_DIR, PARTIAL_INDEXED_DIR] and name and account:
+        success = insert_metadata_to_db(
             client_name=name,
             account_number=account,
             filename=os.path.basename(dest_path),
             filepath=os.path.abspath(dest_path)
         )
+        if not success:
+            # Move file to DB_FAILED_DIR for later recovery
+            db_failed_path = os.path.join(DB_FAILED_DIR, os.path.basename(dest_path))
+            safe_move_file(dest_path, db_failed_path)
+            logging.error(f"[DB_FAILED] {os.path.basename(dest_path)} moved to {DB_FAILED_DIR}")
 
 
 
@@ -216,7 +234,8 @@ class ScanHandler(FileSystemEventHandler):
                             t.read(1)
                         route_file(path)
                         break
-                    except:
+                    except Exception as e:
+                        logging.warning(f"[BATCH] File {path} not ready: {e}")
                         time.sleep(0.5)
 
     def _schedule_batch(self):
@@ -231,12 +250,13 @@ class ScanHandler(FileSystemEventHandler):
 
 def start_watcher():
     os.makedirs(SCAN_DIR, exist_ok=True)
-    print(f"[WATCHING] {os.path.abspath(SCAN_DIR)} → (fully|partial|pending|failed)")
+    logging.info(f"[WATCHING] {os.path.abspath(SCAN_DIR)} → (fully|partial|pending|failed)")
     obs = Observer()
     obs.schedule(ScanHandler(), SCAN_DIR, recursive=False)
     obs.start()
     try:
-        while True: time.sleep(1)
+        while True:
+            time.sleep(1)
     except KeyboardInterrupt:
         obs.stop()
     obs.join()
