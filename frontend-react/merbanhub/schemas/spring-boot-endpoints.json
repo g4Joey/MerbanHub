@@ -1,0 +1,172 @@
+{
+  "endpoints": {
+    "searchDocuments": {
+      "method": "POST",
+      "path": "/api/documents/search",
+      "description": "Search documents with advanced filtering",
+      "requestBody": {
+        "contentType": "application/json",
+        "schema": {
+          "$ref": "api-contracts.json#/searchRequest"
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Search results",
+          "schema": {
+            "$ref": "api-contracts.json#/searchResponse"
+          }
+        },
+        "400": {
+          "description": "Invalid search parameters"
+        },
+        "500": {
+          "description": "Internal server error"
+        }
+      }
+    },
+    "getDocument": {
+      "method": "GET",
+      "path": "/api/documents/{id}",
+      "description": "Get detailed information about a specific document",
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "type": "string",
+          "description": "Document ID"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Document details",
+          "schema": {
+            "$ref": "api-contracts.json#/definitions/document"
+          }
+        },
+        "404": {
+          "description": "Document not found"
+        }
+      }
+    },
+    "downloadDocument": {
+      "method": "GET",
+      "path": "/api/documents/{id}/download",
+      "description": "Download a document file",
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "type": "string",
+          "description": "Document ID"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "File download",
+          "contentType": "application/octet-stream"
+        },
+        "404": {
+          "description": "Document not found"
+        },
+        "403": {
+          "description": "Access denied"
+        }
+      }
+    },
+    "getDepartments": {
+      "method": "GET",
+      "path": "/api/filters/departments",
+      "description": "Get list of available departments for filtering",
+      "responses": {
+        "200": {
+          "description": "List of departments",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "departments": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "searchClients": {
+      "method": "GET",
+      "path": "/api/filters/clients",
+      "description": "Search for client names (for autocomplete)",
+      "parameters": [
+        {
+          "name": "q",
+          "in": "query",
+          "type": "string",
+          "description": "Search query for client names"
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "type": "integer",
+          "default": 10,
+          "description": "Maximum number of results to return"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "List of matching client names",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "clients": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "getFileExtensions": {
+      "method": "GET",
+      "path": "/api/filters/file-extensions",
+      "description": "Get list of available file extensions in the system",
+      "responses": {
+        "200": {
+          "description": "List of file extensions",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "extensions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "string",
+                      "description": "File extension (e.g., 'pdf')"
+                    },
+                    "label": {
+                      "type": "string",
+                      "description": "Human-readable label (e.g., 'PDF Document')"
+                    },
+                    "count": {
+                      "type": "integer",
+                      "description": "Number of documents with this extension"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

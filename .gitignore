@@ -8,6 +8,8 @@ _pycache_/
 # === Virtual environments ===
 .venv/
 env/
+venv/
+backend-java-springboot/Murban Capital backend/OCR/venv/
 
 # === Django ===
 *.log
