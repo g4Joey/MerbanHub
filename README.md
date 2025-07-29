@@ -1,4 +1,3 @@
-
 # MerbanHub
 
 ## OCR & Document Indexing System for UMB Capital
@@ -131,6 +130,7 @@ npm run dev        # or: docker-compose up frontend
 ### Database (MySQL)
 
 - Uses the Docker service defined below
+- See detailed database setup and schema in [README_DB.md](./README_DB.md)
 
 ---
 
