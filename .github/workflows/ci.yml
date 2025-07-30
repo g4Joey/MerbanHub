@@ -44,3 +44,64 @@ jobs:
         env:
           DATABASE_URL: mysql://merbanhub_user:yourpassword@127.0.0.1:3306/merbanhub_db
         run: npm test
+
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: npm install
+      - name: Run npm audit
+        run: npm audit --audit-level=high
+
+  docker-build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build docker-compose services
+        run: docker-compose -f docker-compose.yml build
+
+  smoke-test:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: merbanhub_db
+          MYSQL_USER: merbanhub_user
+          MYSQL_PASSWORD: yourpassword
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Docker Compose
+        run: |
+          docker-compose up -d
+          sleep 30
+      - name: Check Java API health
+        run: |
+          curl --fail http://localhost:8080/api/health
+      - name: Check Django API health
+        run: |
+          curl --fail http://localhost:8001/health
+      - name: Tear down Docker Compose
+        if: always()
+        run: docker-compose down
