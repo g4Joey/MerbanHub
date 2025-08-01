@@ -4,22 +4,17 @@ backend:
   - 'backend_django/**'
 docs:
   - '*.md'
+  - 'docs/**'
 ocr:
   - 'ocr_watcher.py'
   - 'test_ocr.py'
   - 'test_pdf2image.py'
-
-frontend:
-  - 'frontend-react/**'
+  - 'ocr_service/**'
 backend-java:
   - 'backend-java-springboot/**'
 backend-python:
   - 'backend-python-django/**'
 database:
   - 'database/**'
-ocr:
-  - 'ocr_service/**'
-docs:
-  - 'docs/**'
 ci:
   - '.github/workflows/**'

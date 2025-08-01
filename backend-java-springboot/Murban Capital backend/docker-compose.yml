@@ -1,0 +1,9 @@
+version: '3.8'
+services:
+  backend:
+    build: .
+    container_name: murban-backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./uploads:/app/uploads    # mount local 'uploads' folder
