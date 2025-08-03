@@ -315,6 +315,9 @@ def search_files(q: str = Query(..., min_length=1)):
                 })
     return {"results": results}
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 def main():
     watcher_thread = threading.Thread(target=start_watcher, daemon=True)
