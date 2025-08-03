@@ -13,10 +13,10 @@ jobs:
       mysql:
         image: mysql:8
         env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: merbanhub_db
-          MYSQL_USER: merbanhub_user
-          MYSQL_PASSWORD: yourpassword
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_DATABASE:      ${{ secrets.MYSQL_DATABASE }}
+          MYSQL_USER:          ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD:      ${{ secrets.MYSQL_PASSWORD }}
         ports:
           - 3306:3306
         options: >-
@@ -32,7 +32,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18' # or whatever version you're using
+          node-version: '18'
 
       - name: Install dependencies
         run: npm install
@@ -42,7 +42,7 @@ jobs:
 
       - name: Run Tests
         env:
-          DATABASE_URL: mysql://merbanhub_user:yourpassword@127.0.0.1:3306/merbanhub_db
+          DATABASE_URL: mysql://${{ secrets.MYSQL_USER }}:${{ secrets.MYSQL_PASSWORD }}@127.0.0.1:3306/${{ secrets.MYSQL_DATABASE }}
         run: npm test
 
   security-audit:
@@ -66,11 +66,21 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
       - name: Install Docker Compose
         run: sudo apt-get update && sudo apt-get install -y docker-compose
+
       - name: Build docker-compose services
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_DATABASE:      ${{ secrets.MYSQL_DATABASE }}
+          MYSQL_USER:          ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD:      ${{ secrets.MYSQL_PASSWORD }}
+          SCAN_FOLDER:         ${{ secrets.SCAN_FOLDER }}
+          OUTPUT_FOLDER:       ${{ secrets.OUTPUT_FOLDER }}
         run: docker-compose -f docker-compose.yml build
 
   smoke-test:
@@ -80,10 +90,10 @@ jobs:
       mysql:
         image: mysql:8
         env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: merbanhub_db
-          MYSQL_USER: merbanhub_user
-          MYSQL_PASSWORD: yourpassword
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_DATABASE:      ${{ secrets.MYSQL_DATABASE }}
+          MYSQL_USER:          ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD:      ${{ secrets.MYSQL_PASSWORD }}
         ports:
           - 3306:3306
         options: >-
@@ -91,19 +101,22 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
       - name: Set up Docker Compose
         run: |
           docker-compose up -d
           sleep 30
+
       - name: Check Java API health
-        run: |
-          curl --fail http://localhost:8080/api/health
+        run: curl --fail http://localhost:8080/api/health
+
       - name: Check Django API health
-        run: |
-          curl --fail http://localhost:8001/health
+        run: curl --fail http://localhost:8001/health
+
       - name: Tear down Docker Compose
         if: always()
         run: docker-compose down
