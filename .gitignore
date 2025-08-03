@@ -35,3 +35,6 @@ copilot-notes.txt
 
 # === Executables / Installers ===
 DockerDesktopInstaller.exe
+
+# Ignore environment files
+.env
