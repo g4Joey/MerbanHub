@@ -82,7 +82,7 @@ for d in (FULLY_INDEXED_DIR, PARTIAL_INDEXED_DIR, FAILED_DIR, PENDING_DIR, DB_FA
 POPPLER_PATH  = r"C:\poppler-24.08.0\Library\bin"
 TESSERACT_CMD = r"C:\Users\KC-User\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
 pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
-CONFIDENCE_THRESHOLD = 99
+CONFIDENCE_THRESHOLD = 50 # Reasonable threshold for OCR - not too strict, not too lenient
 
 # === OCR & Parsing ===
 def extract_text(path):
@@ -111,43 +111,109 @@ def parse_fields_with_confidence(path):
         print(f"[ERROR] OCR with confidence failed: {e}")
         return None, None, 0, 0
 
-    name_labels = [
-        r"Name of Account Holder\s*\(corporate entities\)", r"Print name",
-        r"Other names?", r"Other name", r"First names?", r"First name",
-        r"Surname\s*\(individual\)", r"Surnames", r"Name"
-    ]
-    account_labels = [
-        r"Client CSD Securities Account No", r"Account Number",
-        r"Account number", r"Account no", r"Account no\."
-    ]
-    name_pattern = re.compile(rf"(?:{'|'.join(name_labels)})\s*[:\-]?\s*([A-Za-z ]+)", re.IGNORECASE)
-    acc_pattern  = re.compile(rf"(?:{'|'.join(account_labels)})\s*[:\-]?\s*([A-Za-z0-9\-]+)", re.IGNORECASE)
-
+    # Build full text from OCR results
     full_text = ""
     for result in ocr_results:
         full_text += " ".join(result["text"]) + " "
+    
+    # Debug: Print extracted text to understand what OCR is seeing
+    logging.info(f"[DEBUG] OCR Text: {full_text[:200]}...")  # First 200 characters
 
-    name_match = name_pattern.search(full_text)
-    acc_match = acc_pattern.search(full_text)
+    # Account number patterns
+    account_patterns = [
+        r"ACCOUNT\s*NUMBER\s*[:\-]?\s*([A-Za-z0-9\-]+)",
+        r"Account\s*Number\s*[:\-]?\s*([A-Za-z0-9\-]+)",
+        r"Account\s*no\.?\s*[:\-]?\s*([A-Za-z0-9\-]+)",
+        r"Client\s*CSD\s*Securities\s*Account\s*No\s*[:\-]?\s*([A-Za-z0-9\-]+)"
+    ]
+    
+    # Name patterns - updated to handle all the variations we see in the OCR text
+    surname_pattern = r"SURNAME\s*[:\-]?\s*([A-Za-z]+)"
+    first_name_pattern = r"FIRST\s*NAME\s*[:\-]?\s*([A-Za-z]+)"
+    other_names_pattern = r"OTHER\s*NAMES?\s*[:\-]?\s*([A-Za-z]+)"  # Fixed: removed \s to get single word
+    client_name_pattern = r"CLIENT\s*NAME\s*[:\-]?\s*([A-Za-z\s]+?)(?=\s+ACCOUNT|$)"  # Fixed: better stopping condition
+    general_name_pattern = r"(?<!CLIENT\s)(?<!FIRST\s)NAME\s*[:\-]?\s*([A-Za-z\s]+?)(?=\s+ACCOUNT|$)"  # Added: for general NAME field
 
-    name = name_match.group(1).strip().replace(" ", "_") if name_match else None
-    account = acc_match.group(1).strip() if acc_match else None
+    # Extract account number
+    account = None
+    acc_conf = 0
+    for pattern in account_patterns:
+        acc_match = re.search(pattern, full_text, re.IGNORECASE)
+        if acc_match:
+            account = acc_match.group(1).strip()
+            acc_conf = extract_confidence_for_text(account, ocr_results)
+            break
 
-    def extract_confidence(target):
-        if not target:
-            return 0
-        for result in ocr_results:
-            words = result["text"]
-            confs = result["conf"]
-            for word, conf in zip(words, confs):
-                if target.lower() in word.lower() and conf != "-1":
-                    return int(conf)
-        return 0
-
-    name_conf = extract_confidence(name)
-    acc_conf  = extract_confidence(account)
+    # Extract name - try individual fields first, then client name, then general name
+    name = None
+    name_conf = 0
+    
+    # Try to extract SURNAME, FIRST NAME, OTHER NAMES
+    surname_match = re.search(surname_pattern, full_text, re.IGNORECASE)
+    first_name_match = re.search(first_name_pattern, full_text, re.IGNORECASE)
+    other_names_match = re.search(other_names_pattern, full_text, re.IGNORECASE)
+    
+    if surname_match or first_name_match or other_names_match:
+        # Build name from individual components
+        name_parts = []
+        confidences = []
+        
+        if surname_match:
+            surname = surname_match.group(1).strip()
+            name_parts.append(surname)
+            confidences.append(extract_confidence_for_text(surname, ocr_results))
+            
+        if first_name_match:
+            first_name = first_name_match.group(1).strip()
+            name_parts.append(first_name)
+            confidences.append(extract_confidence_for_text(first_name, ocr_results))
+            
+        if other_names_match:
+            other_names = other_names_match.group(1).strip()
+            name_parts.append(other_names)
+            confidences.append(extract_confidence_for_text(other_names, ocr_results))
+        
+        name = "_".join(name_parts)
+        name_conf = min(confidences) if confidences else 0
+        
+    else:
+        # Try CLIENT NAME pattern
+        client_name_match = re.search(client_name_pattern, full_text, re.IGNORECASE)
+        if client_name_match:
+            client_name = client_name_match.group(1).strip()
+            name_parts = [part.strip() for part in client_name.split() if part.strip()]
+            name = "_".join(name_parts)
+            name_conf = extract_confidence_for_text(client_name, ocr_results)
+        else:
+            # Fall back to general NAME pattern (for SAMPLE1 & SAMPLE2)
+            general_name_match = re.search(general_name_pattern, full_text, re.IGNORECASE)
+            if general_name_match:
+                general_name = general_name_match.group(1).strip()
+                name_parts = [part.strip() for part in general_name.split() if part.strip()]
+                name = "_".join(name_parts)
+                name_conf = extract_confidence_for_text(general_name, ocr_results)
 
     return name, account, name_conf, acc_conf
+
+def extract_confidence_for_text(target_text, ocr_results):
+    """Extract confidence score for a specific text from OCR results"""
+    if not target_text:
+        return 0
+    
+    confidences = []
+    target_words = target_text.lower().split()
+    
+    for result in ocr_results:
+        words = result["text"]
+        confs = result["conf"]
+        
+        for word, conf in zip(words, confs):
+            if conf != "-1" and word.strip():
+                for target_word in target_words:
+                    if target_word in word.lower():
+                        confidences.append(int(conf))
+    
+    return min(confidences) if confidences else 0
 
 # === Routing ===
 def route_file(path):
@@ -156,18 +222,36 @@ def route_file(path):
     is_image = ext in [".png", ".jpg", ".jpeg"]
 
     name, account, name_conf, acc_conf = parse_fields_with_confidence(path)
+    
+    # Debug logging to see what we extracted and confidence scores
+    logging.info(f"[DEBUG] File: {filename}")
+    logging.info(f"[DEBUG] Name: '{name}' (confidence: {name_conf})")
+    logging.info(f"[DEBUG] Account: '{account}' (confidence: {acc_conf})")
+    logging.info(f"[DEBUG] Threshold: {CONFIDENCE_THRESHOLD}")
 
+    # Determine destination and filename based on extraction success and confidence
     if name and account and name_conf >= CONFIDENCE_THRESHOLD and acc_conf >= CONFIDENCE_THRESHOLD:
         dest_dir = FULLY_INDEXED_DIR
+        # Always combine name and account: "NAME_ACCOUNT"
         new_name = f"{name}_{account}.pdf" if is_image else f"{name}_{account}{ext}"
     elif (name and name_conf >= CONFIDENCE_THRESHOLD) or (account and acc_conf >= CONFIDENCE_THRESHOLD):
         dest_dir = PARTIAL_INDEXED_DIR
-        key = name if name and name_conf >= CONFIDENCE_THRESHOLD else account
-        new_name = f"{key}.pdf" if is_image else f"{key}{ext}"
+        # Use whichever field was extracted with high confidence
+        if name and account:
+            # Both extracted but one has low confidence
+            new_name = f"{name}_{account}.pdf" if is_image else f"{name}_{account}{ext}"
+        else:
+            # Only one field extracted with high confidence
+            key = name if name and name_conf >= CONFIDENCE_THRESHOLD else account
+            new_name = f"{key}.pdf" if is_image else f"{key}{ext}"
     elif name or account:
         dest_dir = PENDING_DIR
-        key = name or account
-        new_name = f"{key}.pdf" if is_image else f"{key}{ext}"
+        # Low confidence extraction
+        if name and account:
+            new_name = f"{name}_{account}.pdf" if is_image else f"{name}_{account}{ext}"
+        else:
+            key = name or account
+            new_name = f"{key}.pdf" if is_image else f"{key}{ext}"
     else:
         dest_dir = FAILED_DIR
         new_name = filename
@@ -178,7 +262,6 @@ def route_file(path):
     while os.path.exists(dest_path):
         dest_path = os.path.join(dest_dir, f"{base}_{counter}{extn}")
         counter += 1
-
 
     file_moved = False
     if is_image and dest_dir != FAILED_DIR:
