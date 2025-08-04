@@ -1,12 +1,10 @@
-
-
 name: CI
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [main, dev]
   pull_request:
-    branches: [ main, dev ]
+    branches: [main, dev]
 
 jobs:
   docker-build:
@@ -26,11 +24,11 @@ jobs:
         shell: bash
         env:
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-          MYSQL_DATABASE:      ${{ secrets.MYSQL_DATABASE }}
-          MYSQL_USER:          ${{ secrets.MYSQL_USER }}
-          MYSQL_PASSWORD:      ${{ secrets.MYSQL_PASSWORD }}
-          SCAN_FOLDER:         ${{ secrets.SCAN_FOLDER }}
-          OUTPUT_FOLDER:       ${{ secrets.OUTPUT_FOLDER }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          SCAN_FOLDER: ${{ secrets.SCAN_FOLDER }}
+          OUTPUT_FOLDER: ${{ secrets.OUTPUT_FOLDER }}
           FULLY_INDEXED_FOLDER: ${{ secrets.FULLY_INDEXED_FOLDER }}
           PARTIALLY_INDEXED_FOLDER: ${{ secrets.PARTIALLY_INDEXED_FOLDER }}
           FAILED_FOLDER: ${{ secrets.FAILED_FOLDER }}
@@ -64,11 +62,11 @@ jobs:
         shell: bash
         env:
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-          MYSQL_DATABASE:      ${{ secrets.MYSQL_DATABASE }}
-          MYSQL_USER:          ${{ secrets.MYSQL_USER }}
-          MYSQL_PASSWORD:      ${{ secrets.MYSQL_PASSWORD }}
-          SCAN_FOLDER:         ${{ secrets.SCAN_FOLDER }}
-          OUTPUT_FOLDER:       ${{ secrets.OUTPUT_FOLDER }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          SCAN_FOLDER: ${{ secrets.SCAN_FOLDER }}
+          OUTPUT_FOLDER: ${{ secrets.OUTPUT_FOLDER }}
           FULLY_INDEXED_FOLDER: ${{ secrets.FULLY_INDEXED_FOLDER }}
           PARTIALLY_INDEXED_FOLDER: ${{ secrets.PARTIALLY_INDEXED_FOLDER }}
           FAILED_FOLDER: ${{ secrets.FAILED_FOLDER }}
@@ -84,7 +82,6 @@ jobs:
           PARTIALLY_INDEXED_FOLDER=${PARTIALLY_INDEXED_FOLDER}
           FAILED_FOLDER=${FAILED_FOLDER}
           EOF
-
 
       - name: Bring up services
         run: |
