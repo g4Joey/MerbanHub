@@ -26,29 +26,95 @@ logging.basicConfig(
 
 # DB Config
 DB_CONFIG = {
-    "host": os.getenv("DB_HOST", "localhost"),
-    "port": int(os.getenv("DB_PORT", 3306)),
-    "user": os.getenv("MYSQL_USER"),
-    "password": os.getenv("MYSQL_PASSWORD"),
-    "database": os.getenv("MYSQL_DATABASE")
+    "host": os.getenv("DB_HOST", os.getenv("MYSQL_HOST", "localhost")),
+    "port": int(os.getenv("DB_PORT", os.getenv("MYSQL_PORT", 3306))),
+    "user": os.getenv("DB_USER", os.getenv("MYSQL_USER")),
+    "password": os.getenv("DB_PASSWORD", os.getenv("MYSQL_PASSWORD")),
+    "database": os.getenv("DB_NAME", os.getenv("MYSQL_DATABASE"))
 }
 
 
-def insert_metadata_to_db(client_name, account_number, filename, filepath):
+def test_database_connection():
+    """
+    Test database connection and verify table exists.
+    Creates table if it doesn't exist.
+    
+    Returns:
+        bool: True if connection successful, False otherwise
+    """
     try:
         conn = mysql.connector.connect(**DB_CONFIG)
         cursor = conn.cursor()
+        
+        # Test connection
+        cursor.execute("SELECT 1")
+        cursor.fetchone()
+        
+        # Check if scanned_documents table exists, create if not
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS scanned_documents (
+                id              INT AUTO_INCREMENT PRIMARY KEY,
+                client_name     VARCHAR(255) NOT NULL,
+                account_number  VARCHAR(100) NOT NULL,
+                filename        VARCHAR(255) NOT NULL UNIQUE,
+                filepath        TEXT NOT NULL,
+                indexed_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_client_account (client_name, account_number),
+                INDEX idx_filename (filename),
+                INDEX idx_indexed_at (indexed_at)
+            )
+        """)
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        logging.info("[DB] Database connection successful and table verified")
+        return True
+        
+    except mysql.connector.Error as err:
+        logging.error(f"[DB ERROR] Database connection failed: {err}")
+        return False
+    except Exception as e:
+        logging.error(f"[DB ERROR] Unexpected database error: {e}")
+        return False
+
+
+def insert_metadata_to_db(client_name, account_number, filename, filepath):
+    """
+    Insert extracted document metadata into the scanned_documents table.
+    
+    Args:
+        client_name (str): Extracted client name (e.g., "JOHN_DOE")
+        account_number (str): Extracted account number (e.g., "123456789")
+        filename (str): New filename after processing (e.g., "JOHN_DOE_123456789.pdf")
+        filepath (str): Full path to the processed file
+    
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        conn = mysql.connector.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+        
+        # Insert into scanned_documents table with proper schema
         cursor.execute("""
             INSERT INTO scanned_documents (client_name, account_number, filename, filepath)
             VALUES (%s, %s, %s, %s)
         """, (client_name, account_number, filename, filepath))
+        
         conn.commit()
         cursor.close()
         conn.close()
-        logging.info(f"[DB] Inserted: {client_name}, {account_number}")
+        
+        logging.info(f"[DB] Successfully inserted: {client_name}, {account_number} -> {filename}")
         return True
+        
     except mysql.connector.Error as err:
-        logging.error(f"[DB ERROR] Failed to insert into DB: {err}")
+        logging.error(f"[DB ERROR] Failed to insert into database: {err}")
+        return False
+    except Exception as e:
+        logging.error(f"[DB ERROR] Unexpected error: {e}")
         return False
 
 
@@ -284,17 +350,21 @@ def route_file(path):
 
     # After successful save/move, insert into DB if both name and account exist
     if file_moved and dest_dir in [FULLY_INDEXED_DIR, PARTIAL_INDEXED_DIR] and name and account:
-        success = insert_metadata_to_db(
-            client_name=name,
-            account_number=account,
-            filename=os.path.basename(dest_path),
-            filepath=os.path.abspath(dest_path)
-        )
-        if not success:
-            # Move file to DB_FAILED_DIR for later recovery
-            db_failed_path = os.path.join(DB_FAILED_DIR, os.path.basename(dest_path))
-            safe_move_file(dest_path, db_failed_path)
-            logging.error(f"[DB_FAILED] {os.path.basename(dest_path)} moved to {DB_FAILED_DIR}")
+        # Only attempt database insertion if we have valid database config
+        if all([DB_CONFIG["user"], DB_CONFIG["password"], DB_CONFIG["database"]]):
+            success = insert_metadata_to_db(
+                client_name=name,
+                account_number=account,
+                filename=os.path.basename(dest_path),
+                filepath=os.path.abspath(dest_path)
+            )
+            if not success:
+                # Move file to DB_FAILED_DIR for later recovery
+                db_failed_path = os.path.join(DB_FAILED_DIR, os.path.basename(dest_path))
+                safe_move_file(dest_path, db_failed_path)
+                logging.error(f"[DB_FAILED] {os.path.basename(dest_path)} moved to {DB_FAILED_DIR}")
+        else:
+            logging.warning(f"[DB] Database not configured - skipping DB insertion for {os.path.basename(dest_path)}")
 
 
 
@@ -375,7 +445,22 @@ def search_files(q: str = Query(..., min_length=1)):
     return {"results": results}
 
 def main():
+    """
+    Main function to start the OCR watcher and FastAPI server.
+    Tests database connection before starting services.
+    """
+    logging.info("[STARTUP] Starting MerbanHub OCR Watcher...")
+    
+    # Test database connection
+    if not test_database_connection():
+        logging.warning("[STARTUP] Database connection failed - continuing without database features")
+        logging.warning("[STARTUP] Files will be processed but not stored in database")
+    
+    # Start file watcher in background thread
     threading.Thread(target=start_watcher, daemon=True).start()
+    
+    # Start FastAPI server
+    logging.info("[STARTUP] Starting API server on http://0.0.0.0:8000")
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
 if __name__ == "__main__":
