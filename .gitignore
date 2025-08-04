@@ -1,3 +1,9 @@
+# Python environment and sensitive files
+.venv/
+__pycache__/
+.env
+ocr_debug.log
+*.pyc
 # === Python ===
 _pycache_/
 *.pyc

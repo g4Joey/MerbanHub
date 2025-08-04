@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: merbanhub-mysql
+    restart: always
+    env_file:
+      - .env                      # <— this line loads the .env file
+    ports:
+      - "3306:3306"
+    volumes:
+      - merbanhub_db_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - merbanhub_net
+
+volumes:
+  merbanhub_db_data:
+
+networks:
+  merbanhub_net:
+    driver: bridge
