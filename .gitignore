@@ -35,3 +35,17 @@ copilot-notes.txt
 
 # === Executables / Installers ===
 DockerDesktopInstaller.exe
+
+# Ignore environment files (DB credentials, API keys)
+*.env
+
+# Ignore Docker volumes if they get created locally
+murbanhub_db_data/
+
+# Ignore OS/system files
+.DS_Store
+Thumbs.db
+
+# Ignore any temporary SQL backups (optional)
+*.bak.sql
+
