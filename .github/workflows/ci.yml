@@ -45,6 +45,7 @@ jobs:
           DATABASE_URL: mysql://${{ secrets.MYSQL_USER }}:${{ secrets.MYSQL_PASSWORD }}@127.0.0.1:3306/${{ secrets.MYSQL_DATABASE }}
         run: npm test
 
+
   security-audit:
     name: Security Audit
     runs-on: ubuntu-latest
