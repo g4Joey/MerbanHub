@@ -44,3 +44,6 @@ DockerDesktopInstaller.exe
 
 # Ignore environment files
 .env
+
+# Exclude debug folder
+debug/
