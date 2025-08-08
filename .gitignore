@@ -33,3 +33,7 @@ copilot-notes.txt
 
 # === Executables / Installers ===
 DockerDesktopInstaller.exe
+
+# Ignore all .env files
+# This is a common practice to avoid committing sensitive information
+*.env 

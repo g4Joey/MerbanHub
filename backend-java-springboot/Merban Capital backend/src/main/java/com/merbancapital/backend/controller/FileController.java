@@ -7,7 +7,11 @@ import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.nio.file.Path;
@@ -21,12 +25,44 @@ public class FileController {
     @Autowired
     private FileService fileService;
 
+    String uploadDir = System.getProperty("user.dir") + File.separator + "incoming-scan";
+    File folder;
+    {
+        folder = new File(uploadDir);
+        if (!folder.exists()) {
+            folder.mkdirs(); // Creates the directory along with any needed parent directories
+        }  // Ensure the upload directory exists
+        folder = new File(uploadDir);
+    }
+
     // 1) Upload endpoint (called by your OCR script)
     @PostMapping("/upload")
     public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) throws IOException {
-        String filename = fileService.store(file);
-        System.out.println("[BACKEND] Received file from OCR: " + filename); // DEBUG LINE
-        return ResponseEntity.ok("Uploaded: " + filename);
+
+        try {
+            // STEP 1: Define upload path
+            String uploadDir = System.getProperty("user.dir") + File.separator + "incoming-scan";
+
+            // STEP 2: Ensure directory exists
+            File folder = new File(uploadDir);
+            if (!folder.exists()) {
+                folder.mkdirs(); // Create the directory if it doesn't exist
+            }
+
+            // Save the file to that directory
+            Path filePath = Paths.get(uploadDir, file.getOriginalFilename());
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            // STEP 3: Log the upload
+            System.out.println("[BACKEND] Received file from OCR: " + file.getOriginalFilename()); // DEBUG LINE
+            return ResponseEntity.ok("File uploaded to: " + filePath.toString());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Upload failed.");
+        }
+
+
+
     }
 
     // 2) List endpoint (called by frontend)

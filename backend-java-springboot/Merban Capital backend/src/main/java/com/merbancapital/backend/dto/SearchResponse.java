@@ -1,5 +1,6 @@
 package com.merbancapital.backend.dto;
 
+import com.merbancapital.backend.model.Document;
 import lombok.*;
 
 import java.util.List;
