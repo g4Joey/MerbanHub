@@ -1,5 +1,7 @@
-
 # MerbanHub
+
+[![Build Status](https://github.com/g4Joey/MerbanHub/actions/workflows/ci.yml/badge.svg)](https://github.com/g4Joey/MerbanHub/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/g4Joey/MerbanHub)](./LICENSE)
 
 ## OCR & Document Indexing System for UMB Capital
 
@@ -19,7 +21,8 @@
 5. [Running Locally](#running-locally)
 6. [Development Workflow](#development-workflow)
 7. [Contributing](#contributing)
-8. [License](#license)
+8. [Troubleshooting](#troubleshooting)
+9. [License](#license)
 
 ---
 
@@ -131,6 +134,8 @@ npm run dev        # or: docker-compose up frontend
 ### Database (MySQL)
 
 - Uses the Docker service defined below
+- See detailed database setup and schema in [README_DB.md](./database/README_DB.md)
+- See [Scanned Documents Table Structure](#scanned-documents-table-structure) for schema and usage
 
 ---
 
@@ -279,7 +284,30 @@ git push -u origin feat/your-feature
 
 ---
 
+## Troubleshooting
+
+- **Docker won’t start**
+  - Make sure Docker Desktop is running and you have enough memory allocated.
+- **Database connection refused**
+  - Check your `.env` file and ensure MySQL is running on port 3306.
+- **Frontend won’t build**
+  - Make sure you have Node.js ≥16 and have run `npm install` in the frontend directory.
+- **OCR service errors**
+  - Ensure all Python dependencies are installed and Tesseract is available in your PATH.
+- **Permission denied on file moves**
+  - Run your terminal as administrator or check folder permissions.
+
+For more help, see the [Issues](https://github.com/g4Joey/MerbanHub/issues) page or contact a maintainer.
+
+---
+
+## Honor Statement
+
 ## License
+
+This repository and its source code are proprietary and the exclusive property of the MerbanHub Team. All Rights Reserved.
+
+Unauthorized use, copying, modification, or distribution of any part of this codebase is strictly prohibited without prior written permission from the copyright holders. For inquiries, contact the repository owner or maintainers.
 
 ---
 

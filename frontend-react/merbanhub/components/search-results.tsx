@@ -142,11 +142,43 @@ export function SearchResults({ results }: SearchResultsProps) {
               </div>
 
               <div className="flex items-center space-x-2 ml-4">
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    window.open(
+                      `http://localhost:8080/api/documents/file?path=${encodeURIComponent(
+                        result.path
+                      )}`,
+                      "_blank"
+                    );
+                  }}
+                >
                   <Eye className="h-4 w-4 mr-1" />
                   View
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    fetch(
+                      `http://localhost:8080/api/documents/file?path=${encodeURIComponent(
+                        result.path
+                      )}`
+                    )
+                      .then((response) => response.blob())
+                      .then((blob) => {
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = result.name;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                      });
+                  }}
+                >
                   <Download className="h-4 w-4 mr-1" />
                   Download
                 </Button>

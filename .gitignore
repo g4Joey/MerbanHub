@@ -8,6 +8,8 @@ _pycache_/
 # === Virtual environments ===
 .venv/
 env/
+venv/
+backend-java-springboot/Murban Capital backend/OCR/venv/
 
 # === Django ===
 *.log
@@ -34,6 +36,16 @@ copilot-notes.txt
 # === Executables / Installers ===
 DockerDesktopInstaller.exe
 
-# Ignore all .env files
-# This is a common practice to avoid committing sensitive information
-*.env 
+# Ignore environment files (DB credentials, API keys)
+*.env
+
+# Ignore Docker volumes if they get created locally
+murbanhub_db_data/
+
+# Ignore OS/system files
+.DS_Store
+Thumbs.db
+
+# Ignore any temporary SQL backups (optional)
+*.bak.sql
+
