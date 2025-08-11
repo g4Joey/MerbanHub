@@ -36,7 +36,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       JWT_SECRET:                ${JWT_SECRET}
       JWT_EXPIRATION_MS:         ${JWT_EXPIRATION_MS}
-      OCR_BASE_PATH:             ${OCR_BASE_PATH}
+     # OCR_BASE_PATH:             ${OCR_BASE_PATH}
     depends_on:
       mysql:
         condition: service_healthy
