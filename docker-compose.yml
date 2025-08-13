@@ -57,3 +57,34 @@ services:
 
 volumes:
   db_data:
+
+  # Java Spring Boot backend service
+  merbanhub_db_data:
+
+services:
+  backend:
+    build:
+      context: ./backend-java-springboot/Merban Capital backend
+      dockerfile: Dockerfile
+    image: merbanhub-backend:latest
+    container_name: merbanhub-backend
+    ports:
+      - "8081:8081"
+    env_file:
+      - ./backend-java-springboot/Merban Capital backend/.env
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS}
+      OCR_BASE_PATH: ${OCR_BASE_PATH}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
