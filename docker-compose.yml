@@ -88,3 +88,17 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+
+# Frontend Next.js service
+  nextjs:
+    build:
+      context: ./frontend-react/merbanhub
+    container_name: merbanhub-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    volumes:
+      - ./frontend-react/merbanhub:/app
+      - /app/node_modules

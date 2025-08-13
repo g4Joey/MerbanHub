@@ -1,0 +1,13 @@
+version: "3.8"
+services:
+  nextjs:
+    build: .
+    container_name: merbanhub-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    volumes:
+      - .:/app
+      - /app/node_modules
