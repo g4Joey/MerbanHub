@@ -21,10 +21,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose the FastAPI port
-EXPOSE 8000
+EXPOSE 8001
 
 # Add a healthcheck for container robustness
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD curl --fail http://localhost:8000/health || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD curl --fail http://localhost:8001/health || exit 1
 
 # Start the FastAPI app with uvicorn
-CMD ["uvicorn", "ocr_watcher:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "ocr_watcher:app", "--host", "0.0.0.0", "--port", "8001"]
