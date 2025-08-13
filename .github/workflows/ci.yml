@@ -77,6 +77,9 @@ jobs:
           FULLY_INDEXED_FOLDER: ${{ secrets.FULLY_INDEXED_FOLDER }}
           PARTIALLY_INDEXED_FOLDER: ${{ secrets.PARTIALLY_INDEXED_FOLDER }}
           FAILED_FOLDER: ${{ secrets.FAILED_FOLDER }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRATION_MS: ${{ secrets.JWT_EXPIRATION_MS }}
+          OCR_BASE_PATH: ${{ secrets.OCR_BASE_PATH }}
         run: |
           cat > .env <<EOF
           MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
@@ -88,6 +91,9 @@ jobs:
           FULLY_INDEXED_FOLDER=${FULLY_INDEXED_FOLDER}
           PARTIALLY_INDEXED_FOLDER=${PARTIALLY_INDEXED_FOLDER}
           FAILED_FOLDER=${FAILED_FOLDER}
+          JWT_SECRET=${JWT_SECRET}
+          JWT_EXPIRATION_MS=${JWT_EXPIRATION_MS}
+          OCR_BASE_PATH=${OCR_BASE_PATH}
           EOF
       - name: Build docker-compose services
         run: docker-compose -f docker-compose.yml build
