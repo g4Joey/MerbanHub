@@ -66,6 +66,18 @@ public class DocumentSpecification {
                 predicates.add(cb.like(cb.lower(root.get("snippet")), "%" + filters.getFullTextSearch().toLowerCase() + "%"));
             }
 
+// Java
+// Inside the build(SearchFilters filters) method, where you collect predicates:
+String account = filters.getAccountNumber();
+if (account != null && !account.isBlank()) {
+    // If accountNumber is on Client: join and compare
+    var clientJoin = root.join("client", jakarta.persistence.criteria.JoinType.LEFT);
+    predicates.add(cb.equal(clientJoin.get("accountNumber"), account.trim()));
+
+    // If accountNumber is on Document instead, use this line instead of the join:
+    // predicates.add(cb.equal(root.get("accountNumber"), account.trim()));
+}
+
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }

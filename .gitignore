@@ -1,9 +1,3 @@
-# Python environment and sensitive files
-.venv/
-__pycache__/
-.env
-ocr_debug.log
-*.pyc
 # === Python ===
 _pycache_/
 *.pyc
@@ -15,8 +9,7 @@ _pycache_/
 .venv/
 env/
 venv/
-backend-java-springboot/Murban Capital backend/OCR/venv/
-
+/MerbanHub/OCR/venv
 # === Django ===
 *.log
 *.pot
@@ -42,5 +35,16 @@ copilot-notes.txt
 # === Executables / Installers ===
 DockerDesktopInstaller.exe
 
-# Ignore environment files
-.env
+# Ignore environment files (DB credentials, API keys)
+*.env
+
+# Ignore Docker volumes if they get created locally
+merbanhub_db_data/
+
+# Ignore OS/system files
+.DS_Store
+Thumbs.db
+
+# Ignore any temporary SQL backups (optional)
+*.bak.sql
+
