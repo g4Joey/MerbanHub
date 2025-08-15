@@ -9,8 +9,7 @@ _pycache_/
 .venv/
 env/
 venv/
-backend-java-springboot/Murban Capital backend/OCR/venv/
-
+/MerbanHub/OCR/venv
 # === Django ===
 *.log
 *.pot
@@ -40,7 +39,7 @@ DockerDesktopInstaller.exe
 *.env
 
 # Ignore Docker volumes if they get created locally
-murbanhub_db_data/
+merbanhub_db_data/
 
 # Ignore OS/system files
 .DS_Store
