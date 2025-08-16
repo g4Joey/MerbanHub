@@ -40,8 +40,13 @@ export function LoginForm({
       });
       let message = "";
       const contentType = response.headers.get("content-type");
+      let token = "";
       if (contentType && contentType.includes("application/json")) {
         const data = await response.json();
+        token = data.token;
+        if (token) {
+          localStorage.setItem("jwtToken", token);
+        }
         message = data.message || JSON.stringify(data);
       } else {
         message = await response.text();
