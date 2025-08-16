@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useRouter } from "next/navigation";
 import {
   Select,
   SelectTrigger,
@@ -13,6 +14,8 @@ import {
 } from "@/components/ui/select";
 
 export function SignUp({ className, ...props }: React.ComponentProps<"form">) {
+  const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,14 +27,14 @@ export function SignUp({ className, ...props }: React.ComponentProps<"form">) {
     { id: 3, name: "IT" },
     { id: 4, name: "HR" },
   ];
-  // Roles are hidden and default to USER
-  const roles = ["USER"];
+  // Roles are hidden and default to ROLE_USER
+  const roles = ["ROLE_USER"];
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   // Change this URL to your actual Spring Boot backend signup endpoint
-  const SIGNUP_URL = "http://localhost:8080/api/signup";
+  const SIGNUP_URL = "http://localhost:8080/api/auth/signup";
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -53,11 +56,19 @@ export function SignUp({ className, ...props }: React.ComponentProps<"form">) {
         },
         body: JSON.stringify(payload),
       });
-      if (!response.ok) {
+      let message = "";
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
         const data = await response.json();
-        throw new Error(data.message || "Signup failed");
+        message = data.message || JSON.stringify(data);
+      } else {
+        message = await response.text();
       }
-      setSuccess("Signup successful! Please login.");
+      if (!response.ok) {
+        throw new Error(message || "Signup failed");
+      }
+      setSuccess(message || "Signup successful! Please login.");
+      router.push("/login");
     } catch (err: any) {
       setError(err.message || "An error occurred");
     } finally {
@@ -105,16 +116,20 @@ export function SignUp({ className, ...props }: React.ComponentProps<"form">) {
         <div className="grid gap-3">
           <div className="flex items-center">
             <Label htmlFor="password">Password</Label>
-            <a
-              href="#"
-              className="ml-auto text-sm underline-offset-4 hover:underline"
+            <button
+              type="button"
+              className="ml-auto text-sm underline-offset-4 hover:underline px-2"
+              onClick={() => setShowPassword((prev) => !prev)}
+              tabIndex={0}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              disabled={loading}
             >
-              Forgot your password?
-            </a>
+              {showPassword ? "Hide" : "Show"}
+            </button>
           </div>
           <Input
             id="password"
-            type="password"
+            type={showPassword ? "text" : "password"}
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
