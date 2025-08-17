@@ -47,16 +47,23 @@ export function LoginForm({
         console.log(data);
         token = data.token;
         if (token) {
+          // Store in localStorage
           localStorage.setItem("jwtToken", token);
+          // Store in cookies
+          document.cookie = `authToken=${token}; path=/`;
         }
         // Store user details and role
         if (data) {
+          // Store in localStorage
           localStorage.setItem("userId", String(data.id));
           localStorage.setItem("username", data.username);
           localStorage.setItem("email", data.email);
           localStorage.setItem("userType", data.type);
           if (Array.isArray(data.roles) && data.roles.length > 0) {
-            localStorage.setItem("userRole", data.roles[0].name);
+            const role = data.roles[0].name;
+            localStorage.setItem("userRole", role);
+            // Store role in cookie
+            document.cookie = `userRole=${role}; path=/`;
           }
         }
         message = data.message || JSON.stringify(data);
