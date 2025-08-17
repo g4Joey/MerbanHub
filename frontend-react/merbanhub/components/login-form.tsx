@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export function LoginForm({
   className,
@@ -43,9 +44,20 @@ export function LoginForm({
       let token = "";
       if (contentType && contentType.includes("application/json")) {
         const data = await response.json();
+        console.log(data);
         token = data.token;
         if (token) {
           localStorage.setItem("jwtToken", token);
+        }
+        // Store user details and role
+        if (data) {
+          localStorage.setItem("userId", String(data.id));
+          localStorage.setItem("username", data.username);
+          localStorage.setItem("email", data.email);
+          localStorage.setItem("userType", data.type);
+          if (Array.isArray(data.roles) && data.roles.length > 0) {
+            localStorage.setItem("userRole", data.roles[0].name);
+          }
         }
         message = data.message || JSON.stringify(data);
       } else {
@@ -53,11 +65,14 @@ export function LoginForm({
       }
       if (!response.ok) {
         throw new Error(message || "Login failed");
+        alert(message || "Login failed");
       }
       setSuccess(message || "Login successful!");
+      alert(message || "Login successful!");
       router.push("/dashboard/search");
     } catch (err: any) {
       setError(err.message || "An error occurred");
+      alert(err.message || "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -114,9 +129,7 @@ export function LoginForm({
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Logging in..." : "Login"}
         </Button>
-        {error && (
-          <div className="text-red-500 text-sm text-center">{error}</div>
-        )}
+        {error && <div className="text-red-500 text-sm text-center">{""}</div>}
         {success && (
           <div className="text-green-500 text-sm text-center">{success}</div>
         )}
@@ -128,9 +141,9 @@ export function LoginForm({
       </div>
       <div className="text-center text-sm">
         Don&apos;t have an account?{" "}
-        <a href="#" className="underline underline-offset-4">
+        <Link href="/signup" className="underline underline-offset-4">
           Sign up
-        </a>
+        </Link>
       </div>
     </form>
   );
