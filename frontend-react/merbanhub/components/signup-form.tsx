@@ -12,7 +12,7 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
-
+import Link from "next/link";
 export function SignUp({ className, ...props }: React.ComponentProps<"form">) {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -21,11 +21,16 @@ export function SignUp({ className, ...props }: React.ComponentProps<"form">) {
   const [password, setPassword] = useState("");
   const [departmentId, setDepartmentId] = useState("");
   // Example departments, replace with API or prop if needed
+  
   const departments = [
-    { id: 1, name: "Finance" },
-    { id: 2, name: "Operations" },
-    { id: 3, name: "IT" },
-    { id: 4, name: "HR" },
+    { id: 1, name: "Accounts&Compliance" },
+    { id: 2, name: "IHL Account Opening" },
+    { id: 3, name: "Stockbrokers" },
+    { id: 4, name: "SDSL" },
+    { id:5,name:"client service"},
+    { id: 6, name: "Pensions" },
+    { id: 7, name: "Marketing" },
+    { id: 8, name: "Govt Securities" },
   ];
   // Roles are hidden and default to ROLE_USER
   const roles = ["ROLE_USER"];
@@ -174,9 +179,9 @@ export function SignUp({ className, ...props }: React.ComponentProps<"form">) {
       </div>
       <div className="text-center text-sm">
         Already have an account?{" "}
-        <a href="#" className="underline underline-offset-4">
+        <Link href="#" className="underline underline-offset-4">
           login
-        </a>
+        </Link>
       </div>
     </form>
   );
