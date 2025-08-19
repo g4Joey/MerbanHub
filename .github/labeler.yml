@@ -1,0 +1,20 @@
+frontend:
+  - 'frontend-react/**'
+backend:
+  - 'backend_django/**'
+docs:
+  - '*.md'
+  - 'docs/**'
+ocr:
+  - 'ocr_watcher.py'
+  - 'test_ocr.py'
+  - 'test_pdf2image.py'
+  - 'ocr_service/**'
+backend-java:
+  - 'backend-java-springboot/**'
+backend-python:
+  - 'backend-python-django/**'
+database:
+  - 'database/**'
+ci:
+  - '.github/workflows/**'

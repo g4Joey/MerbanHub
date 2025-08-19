@@ -1,0 +1,50 @@
+# === Python ===
+_pycache_/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+
+# === Virtual environments ===
+.venv/
+env/
+venv/
+/MerbanHub/OCR/venv
+# === Django ===
+*.log
+*.pot
+*.pyc
+
+# === Output folders ===
+processed/
+incoming-scan/
+
+# OS/temp files
+.DS_Store
+Thumbs.db
+
+# === Node ===
+node_modules/
+
+# === IDE / Editor ===
+.idea/
+
+# === Copilot notes ===
+copilot-notes.txt
+
+# === Executables / Installers ===
+DockerDesktopInstaller.exe
+
+# Ignore environment files (DB credentials, API keys)
+*.env
+
+# Ignore Docker volumes if they get created locally
+merbanhub_db_data/
+
+# Ignore OS/system files
+.DS_Store
+Thumbs.db
+
+# Ignore any temporary SQL backups (optional)
+*.bak.sql
+

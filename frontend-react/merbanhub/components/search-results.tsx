@@ -52,6 +52,20 @@ export function SearchResults({ results }: SearchResultsProps) {
     }
   };
 
+  const safeFilename = (result: SearchResult) => {
+    if (result.name) return result.name;
+    if (result.fileName) return result.fileName;
+    if (result.path) {
+      try {
+        const dec = decodeURIComponent(result.path);
+        return dec.split("/").pop()?.split("\\").pop() || "download";
+      } catch {
+        return result.path.split("/").pop()?.split("\\").pop() || "download";
+      }
+    }
+    return "download";
+  };
+
   return (
     <div className="space-y-4">
       {results.map((result) => (
@@ -146,12 +160,15 @@ export function SearchResults({ results }: SearchResultsProps) {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    window.open(
-                      `http://localhost:8080/api/documents/file?path=${encodeURIComponent(
-                        result.path
-                      )}`,
-                      "_blank"
-                    );
+                    // Guard for missing path
+                    if (!result.path) {
+                      alert("No file path available for this document.");
+                      return;
+                    }
+                    const url = `http://localhost:8080/api/documents/file?path=${encodeURIComponent(
+                      result.path
+                    )}`;
+                    window.open(url, "_blank");
                   }}
                 >
                   <Eye className="h-4 w-4 mr-1" />
@@ -161,21 +178,46 @@ export function SearchResults({ results }: SearchResultsProps) {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    fetch(
-                      `http://localhost:8080/api/documents/file?path=${encodeURIComponent(
-                        result.path
-                      )}`
-                    )
-                      .then((response) => response.blob())
+                    // Guard for missing path
+                    if (!result.path) {
+                      alert("No file path available for this document.");
+                      return;
+                    }
+                    const url = `http://localhost:8080/api/documents/file?path=${encodeURIComponent(
+                      result.path
+                    )}`;
+
+                    fetch(url)
+                      .then((response) => {
+                        if (!response.ok) {
+                          // try to parse json error and show it
+                          return response
+                            .json()
+                            .then((j) => {
+                              alert(j?.error || "Download failed");
+                              throw new Error("Download failed");
+                            })
+                            .catch(() => {
+                              alert("Download failed");
+                              throw new Error("Download failed");
+                            });
+                        }
+                        return response.blob();
+                      })
                       .then((blob) => {
-                        const url = window.URL.createObjectURL(blob);
+                        const fileName = safeFilename(result);
+                        const blobUrl = window.URL.createObjectURL(blob);
                         const a = document.createElement("a");
-                        a.href = url;
-                        a.download = result.name;
+                        a.href = blobUrl;
+                        a.download = fileName;
                         document.body.appendChild(a);
                         a.click();
-                        window.URL.revokeObjectURL(url);
+                        window.URL.revokeObjectURL(blobUrl);
                         document.body.removeChild(a);
+                      })
+                      .catch((err) => {
+                        // already handled above with alerts; this prevents console errors
+                        console.debug("download error:", err);
                       });
                   }}
                 >

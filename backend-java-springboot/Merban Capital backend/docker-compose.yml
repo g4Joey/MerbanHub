@@ -1,0 +1,61 @@
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: merbanhub-mysql
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "3306:3306"
+    healthcheck:
+      # MySQL will be marked healthy once mysqladmin ping succeeds
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${MYSQL_USER}", "-p${MYSQL_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    volumes:
+      - merbanhub_db_data:/var/lib/mysql
+      - ../../database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: merbanhub-backend:latest
+    container_name: merbanhub-backend
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      SPRING_DATASOURCE_URL:      ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      JWT_SECRET:                ${JWT_SECRET}
+      JWT_EXPIRATION_MS:         ${JWT_EXPIRATION_MS}
+      # Inside the container we always use the container-side path /ocr so the app
+      # doesn't mix host Windows paths with container paths. The host folder is
+      # mounted below via a service volume mapping.
+      OCR_BASE_PATH: /ocr
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ${OCR_BASE_PATH}:/ocr
+    healthcheck:
+      # (optional) check your own /actuator/health on port 8080
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  merbanhub_db_data:
+
+networks:
+  merbanhub_net:
+    driver: bridge

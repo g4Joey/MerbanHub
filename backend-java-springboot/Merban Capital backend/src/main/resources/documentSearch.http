@@ -1,0 +1,8 @@
+POST http://localhost:8080/api/documents/search
+Content-Type: application/json
+
+{
+  "clientName": "John",
+  "page": 1,
+  "pageSize": 5
+}
