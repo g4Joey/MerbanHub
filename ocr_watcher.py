@@ -415,7 +415,7 @@ def start_watcher():
     obs.join()
 
 # === FastAPI Search API ===
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
@@ -443,6 +443,20 @@ def search_files(q: str = Query(..., min_length=1)):
                     "path": os.path.join(folder, fname)
                 })
     return {"results": results}
+
+# --- Upload Endpoint ---
+@app.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    """
+    Upload a file to the incoming-scan directory for OCR processing.
+    """
+    upload_dir = SCAN_DIR
+    os.makedirs(upload_dir, exist_ok=True)
+    file_path = os.path.join(upload_dir, file.filename)
+    with open(file_path, "wb") as f:
+        content = await file.read()
+        f.write(content)
+    return {"success": True, "filename": file.filename, "path": file_path}
 
 def main():
     """

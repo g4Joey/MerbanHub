@@ -1,16 +1,21 @@
 version: '3.8'
 
 services:
-  ocr-service:
+  ocr_watcher:
     build:
       context: .
       dockerfile: Dockerfile
     env_file:
       - .env
+    ports:
+      - "8000:8000"
     volumes:
-      - "${SCAN_FOLDER}:/app/scans"
-      - "${OUTPUT_FOLDER}:/app/output"
-      - "./logs:/app/logs"
+      - ./fully_indexed:/app/fully_indexed
+      - ./partially_indexed:/app/partially_indexed
+      - ./pending:/app/pending
+      - ./failed:/app/failed
+      - ./db_failed:/app/db_failed
+      - ./incoming-scan:/app/incoming-scan
     depends_on:
       db:
         condition: service_healthy
