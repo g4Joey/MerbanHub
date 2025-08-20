@@ -74,12 +74,12 @@ export function LoginForm({
         throw new Error(message || "Login failed");
         alert(message || "Login failed");
       }
-      setSuccess(message || "Login successful!");
-      alert(message || "Login successful!");
+      setSuccess( "Login successful!");
+      
       router.push("/dashboard/search");
     } catch (err: any) {
-      setError(err.message || "An error occurred");
-      alert(err.message || "An error occurred");
+      setError( "An error occurred");
+      
     } finally {
       setLoading(false);
     }
@@ -136,10 +136,6 @@ export function LoginForm({
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Logging in..." : "Login"}
         </Button>
-        {error && <div className="text-red-500 text-sm text-center">{""}</div>}
-        {success && (
-          <div className="text-green-500 text-sm text-center">{success}</div>
-        )}
         <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
           <span className="bg-background text-muted-foreground relative z-10 px-2">
             Or continue with
