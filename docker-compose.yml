@@ -18,12 +18,12 @@ services:
       - MYSQL_PASSWORD
       - MYSQL_HOST=db
     volumes:
-      - ocr_incoming_scan:/app/incoming-scan
-      - ocr_output:/app/output
-      - ocr_fully_indexed:/app/fully_indexed
-      - ocr_partially_indexed:/app/partially_indexed
-      - ocr_failed:/app/failed
-      - ./logs:/app/logs
+      - "${SCAN_FOLDER:-./incoming-scan}:/app/incoming-scan"
+      - "${OUTPUT_FOLDER:-./output}:/app/output"
+      - "${FULLY_INDEXED_FOLDER:-./fully_indexed}:/app/fully_indexed"
+      - "${PARTIALLY_INDEXED_FOLDER:-./partially_indexed}:/app/partially_indexed"
+      - "${FAILED_FOLDER:-./failed}:/app/failed"
+      - "./logs:/app/logs"
     depends_on:
       db:
         condition: service_healthy
@@ -58,8 +58,3 @@ services:
 
 volumes:
   db_data:
-  ocr_incoming_scan:
-  ocr_output:
-  ocr_fully_indexed:
-  ocr_partially_indexed:
-  ocr_failed:
