@@ -1,27 +1,64 @@
-version: '3.8'
+version: "3.8"
 
 services:
   ocr_watcher:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: ocr-service
+    restart: unless-stopped
     env_file:
       - .env
+<<<<<<< HEAD
     ports:
       - "8000:8000"
     volumes:
       - ./fully_indexed:/app/fully_indexed
-      - ./partially_indexed:/app/partially_indexed
-      - ./pending:/app/pending
-      - ./failed:/app/failed
-      - ./db_failed:/app/db_failed
-      - ./incoming-scan:/app/incoming-scan
+          environment:
+            - SCAN_FOLDER
+            - OUTPUT_FOLDER
+            - MYSQL_ROOT_PASSWORD
+            - MYSQL_DATABASE
+            - MYSQL_USER
+            - MYSQL_PASSWORD
+            - MYSQL_HOST=db
+          volumes:
+            - "${SCAN_FOLDER:-./incoming-scan}:/app/incoming-scan"
+            - "${OUTPUT_FOLDER:-./output}:/app/output"
+            - "${FULLY_INDEXED_FOLDER:-./fully_indexed}:/app/fully_indexed"
+            - "${PARTIALLY_INDEXED_FOLDER:-./partially_indexed}:/app/partially_indexed"
+            - "${FAILED_FOLDER:-./failed}:/app/failed"
+            - "./logs:/app/logs"
+      - SCAN_FOLDER
+      - OUTPUT_FOLDER
+      - MYSQL_ROOT_PASSWORD
+      - MYSQL_DATABASE
+      - MYSQL_USER
+      - MYSQL_PASSWORD
+      - MYSQL_HOST=db
+    volumes:
+      - "${SCAN_FOLDER:-./incoming-scan}:/app/incoming-scan"
+      - "${OUTPUT_FOLDER:-./output}:/app/output"
+      - "${FULLY_INDEXED_FOLDER:-./fully_indexed}:/app/fully_indexed"
+      - "${PARTIALLY_INDEXED_FOLDER:-./partially_indexed}:/app/partially_indexed"
+      - "${FAILED_FOLDER:-./failed}:/app/failed"
+      - "./logs:/app/logs"
+>>>>>>> dev
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    ports:
+      - "8000:8000"
 
   db:
     image: mysql:8
+    container_name: merbanhub-db
+    restart: unless-stopped
     env_file:
       - .env
     environment:
@@ -40,4 +77,4 @@ services:
       retries: 5
 
 volumes:
-  db_data: {}
+  db_data:
