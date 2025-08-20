@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  ocr-watcher:
+    build: .
+    container_name: ocr-watcher-service
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount directories for file processing
+      - ./incoming-scan:/app/incoming-scan
+      - ./fully_indexed:/app/fully_indexed
+      - ./partially_indexed:/app/partially_indexed
+      - ./failed:/app/failed
+      - ./debug:/app/debug
+      - ./logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+      - TESSERACT_CMD=/usr/bin/tesseract
+      - POPPLER_PATH=/usr/bin
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - ocr-network
+
+networks:
+  ocr-network:
+    driver: bridge
+
+volumes:
+  ocr-data:
+    driver: local

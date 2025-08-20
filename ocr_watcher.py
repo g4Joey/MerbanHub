@@ -148,9 +148,12 @@ def is_valid_account(val):
 
 # === Routing Logic ===
 def route_file(src_path):
+    logging.info(f"Starting to route file: {src_path}")
     filename = os.path.basename(src_path)
     ext = os.path.splitext(filename)[1].lower()
+    logging.info(f"Processing file: {filename}, extension: {ext}")
     text = extract_text(src_path)
+    logging.info(f"Extracted text length: {len(text)} characters")
     name, name_label = parse_fields(text, src_path)
     account, account_label = None, None
     # Try to extract account number if not already found as name
@@ -238,21 +241,29 @@ class ScanHandler(FileSystemEventHandler):
     def _delayed_batch_process(self):
         with self._lock:
             ScanHandler._timer = None
+        logging.info("Starting delayed batch process...")
         time.sleep(5)
         files = [f for f in os.listdir(SCAN_DIR) if f.lower().endswith((".pdf", ".png", ".jpg", ".jpeg"))]
+        logging.info(f"Found {len(files)} files to process: {files}")
         for fname in files:
             fpath = os.path.join(SCAN_DIR, fname)
+            logging.info(f"Processing file: {fpath}")
             if not os.path.isfile(fpath):
+                logging.warning(f"File {fpath} is not a file, skipping")
                 continue
             for attempt in range(10):
                 try:
                     if not os.path.isfile(fpath):
+                        logging.warning(f"File {fpath} no longer exists at attempt {attempt}")
                         break
                     with open(fpath, 'rb') as f:
                         f.read(1)
+                    logging.info(f"Routing file: {fpath}")
                     route_file(fpath)
+                    logging.info(f"Successfully processed: {fpath}")
                     break
                 except Exception as e:
+                    logging.error(f"Attempt {attempt + 1} failed for {fpath}: {e}")
                     time.sleep(0.5)
             else:
                 logging.error(f"Failed to process {fpath} after multiple attempts.")
@@ -266,16 +277,33 @@ class ScanHandler(FileSystemEventHandler):
 
     def on_created(self, event):
         if not event.is_directory:
+            logging.info(f"File created: {event.src_path}")
             self._schedule_batch()
 
     def on_moved(self, event):
         if not event.is_directory:
+            logging.info(f"File moved: {event.src_path}")
             self._schedule_batch()
 
 def start_watcher():
     abs_path = os.path.abspath(SCAN_DIR)
     logging.info(f"[WATCHING] {abs_path} → (fully|partial|failed)")
     os.makedirs(SCAN_DIR, exist_ok=True)
+    
+    # Process existing files on startup
+    existing_files = [f for f in os.listdir(SCAN_DIR) if f.lower().endswith((".pdf", ".png", ".jpg", ".jpeg"))]
+    if existing_files:
+        logging.info(f"Processing {len(existing_files)} existing files on startup: {existing_files}")
+        for fname in existing_files:
+            fpath = os.path.join(SCAN_DIR, fname)
+            if os.path.isfile(fpath):
+                try:
+                    logging.info(f"Processing existing file: {fpath}")
+                    route_file(fpath)
+                    logging.info(f"Successfully processed existing file: {fpath}")
+                except Exception as e:
+                    logging.error(f"Failed to process existing file {fpath}: {e}")
+    
     obs = Observer()
     obs.schedule(ScanHandler(), path=SCAN_DIR, recursive=False)
     obs.start()

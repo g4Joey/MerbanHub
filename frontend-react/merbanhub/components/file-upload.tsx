@@ -55,7 +55,7 @@ export function FileUpload({
   const [isDragOver, setIsDragOver] = useState(false);
 
   
-  // This function will now handle the actual upload to your backend
+  // This function will now handle the actual upload to your backend and trigger OCR
   const uploadFileToServer = useCallback(
     async (fileToUpload: FileWithProgress) => {
       const formData = new FormData();
@@ -65,7 +65,8 @@ export function FileUpload({
       const token = localStorage.getItem("jwtToken");
 
       try {
-        const response = await fetch("http://localhost:8080/api/files/upload", {
+        // Upload to OCR endpoint instead of regular file upload
+        const response = await fetch("http://localhost:8080/api/ocr/upload", {
           method: "POST",
           headers: {
             Authorization: token ? `Bearer ${token}` : "", // attach JWT if available
@@ -74,6 +75,9 @@ export function FileUpload({
         });
 
         if (response.ok) {
+          const result = await response.json();
+          console.log("OCR upload successful:", result);
+          
           setFiles((prev) =>
             prev.map((f) =>
               f.id === fileToUpload.id
@@ -81,6 +85,11 @@ export function FileUpload({
                 : f
             )
           );
+          
+          // Optionally trigger a notification or callback
+          if (result.processing) {
+            console.log("OCR processing started for:", fileToUpload.file.name);
+          }
         } else {
           console.error("Upload failed:", response.statusText);
           setFiles((prev) =>
