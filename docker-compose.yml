@@ -1,3 +1,4 @@
+version: "3.8"
 
 services:
   ocr-service:
@@ -17,12 +18,12 @@ services:
       - MYSQL_PASSWORD
       - MYSQL_HOST=db
     volumes:
-  - ocr_incoming_scan:/app/incoming-scan
-  - ocr_output:/app/output
-  - ocr_fully_indexed:/app/fully_indexed
-  - ocr_partially_indexed:/app/partially_indexed
-  - ocr_failed:/app/failed
-  - ./logs:/app/logs
+      - ocr_incoming_scan:/app/incoming-scan
+      - ocr_output:/app/output
+      - ocr_fully_indexed:/app/fully_indexed
+      - ocr_partially_indexed:/app/partially_indexed
+      - ocr_failed:/app/failed
+      - ./logs:/app/logs
     depends_on:
       db:
         condition: service_healthy
