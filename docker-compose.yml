@@ -1,75 +1,48 @@
 version: "3.8"
 
 services:
+version: "3.8"
+
+services:
   ocr_watcher:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ocr-service
+    container_name: ocr_watcher
     restart: unless-stopped
-    env_file:
-      - .env
-<<<<<<< HEAD
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TZ=Africa/Lagos
     ports:
       - "8000:8000"
     volumes:
-      - ./fully_indexed:/app/fully_indexed
-          environment:
-            - SCAN_FOLDER
-            - OUTPUT_FOLDER
-            - MYSQL_ROOT_PASSWORD
-            - MYSQL_DATABASE
-            - MYSQL_USER
-            - MYSQL_PASSWORD
-            - MYSQL_HOST=db
-          volumes:
-            - "${SCAN_FOLDER:-./incoming-scan}:/app/incoming-scan"
-            - "${OUTPUT_FOLDER:-./output}:/app/output"
-            - "${FULLY_INDEXED_FOLDER:-./fully_indexed}:/app/fully_indexed"
-            - "${PARTIALLY_INDEXED_FOLDER:-./partially_indexed}:/app/partially_indexed"
-            - "${FAILED_FOLDER:-./failed}:/app/failed"
-            - "./logs:/app/logs"
-      - SCAN_FOLDER
-      - OUTPUT_FOLDER
-      - MYSQL_ROOT_PASSWORD
-      - MYSQL_DATABASE
-      - MYSQL_USER
-      - MYSQL_PASSWORD
-      - MYSQL_HOST=db
-    volumes:
-      - "${SCAN_FOLDER:-./incoming-scan}:/app/incoming-scan"
-      - "${OUTPUT_FOLDER:-./output}:/app/output"
-      - "${FULLY_INDEXED_FOLDER:-./fully_indexed}:/app/fully_indexed"
-      - "${PARTIALLY_INDEXED_FOLDER:-./partially_indexed}:/app/partially_indexed"
-      - "${FAILED_FOLDER:-./failed}:/app/failed"
-      - "./logs:/app/logs"
->>>>>>> dev
+      - ./incoming-scan:/incoming-scan
+      - ./fully_indexed:/fully_indexed
+      - ./partially_indexed:/partially_indexed
+      - ./failed:/failed
+      - ./debug:/debug
     depends_on:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health" ]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
-    ports:
-      - "8000:8000"
+      retries: 5
 
   db:
-    image: mysql:8
-    container_name: merbanhub-db
-    restart: unless-stopped
-    env_file:
-      - .env
+    image: mysql:8.0
+    container_name: merbanhub_db
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    volumes:
-      - db_data:/var/lib/mysql
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: merbanhub
+      MYSQL_USER: merban
+      MYSQL_PASSWORD: merban123
     ports:
       - "3306:3306"
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - merbanhub_db_data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -77,4 +50,5 @@ services:
       retries: 5
 
 volumes:
-  db_data:
+  merbanhub_db_data:
+    driver: local
