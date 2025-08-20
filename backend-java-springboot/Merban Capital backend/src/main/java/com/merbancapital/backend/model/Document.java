@@ -1,5 +1,6 @@
 package com.merbancapital.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -89,11 +90,21 @@ public class Document {
         this.fileName = fileName;
     }
 
+    @JsonProperty("name")
+    public String getNameForJson() {
+        return fileName;
+    }
+
     public String getFilePath() {
         return filePath;
     }
     public void setFilePath(String filePath) {
         this.filePath = filePath;
+    }
+
+    @JsonProperty("path")
+    public String getPathForJson() {
+        return filePath;
     }
 
     public Instant getDateModified() {

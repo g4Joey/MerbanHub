@@ -58,6 +58,12 @@ public class SecurityConfig {
                 // Allow preflight requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                // Allow the public file-by-path endpoint so the controller can
+                // return a clear 400/404 when the frontend omits the path.
+                // Note: this only permits GET /api/documents/file; other document
+                // routes remain protected.
+                .requestMatchers(HttpMethod.GET, "/api/documents/file").permitAll()
+
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())

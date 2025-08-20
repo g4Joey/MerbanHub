@@ -26,7 +26,7 @@ services:
     image: merbanhub-backend:latest
     container_name: merbanhub-backend
     ports:
-      - "8081:8081"
+      - "8080:8080"
     env_file:
       - .env
     environment:
@@ -35,13 +35,19 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       JWT_SECRET:                ${JWT_SECRET}
       JWT_EXPIRATION_MS:         ${JWT_EXPIRATION_MS}
-     # OCR_BASE_PATH: ${OCR_BASE_PATH}
+      # Inside the container we always use the container-side path /ocr so the app
+      # doesn't mix host Windows paths with container paths. The host folder is
+      # mounted below via a service volume mapping.
+      OCR_BASE_PATH: /ocr
+
     depends_on:
       mysql:
         condition: service_healthy
+    volumes:
+      - ${OCR_BASE_PATH}:/ocr
     healthcheck:
       # (optional) check your own /actuator/health on port 8080
-      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 5

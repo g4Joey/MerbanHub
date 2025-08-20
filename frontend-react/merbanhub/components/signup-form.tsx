@@ -1,14 +1,92 @@
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+"use client";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useRouter } from "next/navigation";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
+import Link from "next/link";
+export function SignUp({ className, ...props }: React.ComponentProps<"form">) {
+  const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [departmentId, setDepartmentId] = useState("");
+  // Example departments, replace with API or prop if needed
+  
+  const departments = [
+    { id: 1, name: "Accounts&Compliance" },
+    { id: 2, name: "IHL Account Opening" },
+    { id: 3, name: "Stockbrokers" },
+    { id: 4, name: "SDSL" },
+    { id:5,name:"client service"},
+    { id: 6, name: "Pensions" },
+    { id: 7, name: "Marketing" },
+    { id: 8, name: "Govt Securities" },
+  ];
+  // Roles are hidden and default to ROLE_USER
+  const roles = ["ROLE_USER"];
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-export function SignUp({
-  className,
-  ...props
-}: React.ComponentProps<"form">) {
+  // Change this URL to your actual Spring Boot backend signup endpoint
+  const SIGNUP_URL = "http://localhost:8080/api/auth/signup";
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess("");
+    try {
+      const payload = {
+        username,
+        email,
+        password,
+        departmentId: departmentId ? parseInt(departmentId) : null,
+        roles,
+      };
+      const response = await fetch(SIGNUP_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      let message = "";
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        message = data.message || JSON.stringify(data);
+      } else {
+        message = await response.text();
+      }
+      if (!response.ok) {
+        throw new Error(message || "Signup failed");
+      }
+      setSuccess(message || "Signup successful! Please login.");
+      router.push("/login");
+    } catch (err: any) {
+      setError(err.message || "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props}>
+    <form
+      className={cn("flex flex-col gap-6", className)}
+      {...props}
+      onSubmit={handleSubmit}
+    >
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-2xl font-bold">Sign up to your account</h1>
         <p className="text-muted-foreground text-sm text-balance">
@@ -17,36 +95,94 @@ export function SignUp({
       </div>
       <div className="grid gap-6">
         <div className="grid gap-3">
+          <Label htmlFor="username">Username</Label>
+          <Input
+            id="username"
+            type="text"
+            placeholder="Your username"
+            required
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            disabled={loading}
+          />
+        </div>
+        <div className="grid gap-3">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" placeholder="m@example.com" required />
+          <Input
+            id="email"
+            type="email"
+            placeholder="m@example.com"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={loading}
+          />
         </div>
         <div className="grid gap-3">
           <div className="flex items-center">
             <Label htmlFor="password">Password</Label>
-            <a
-              href="#"
-              className="ml-auto text-sm underline-offset-4 hover:underline"
+            <button
+              type="button"
+              className="ml-auto text-sm underline-offset-4 hover:underline px-2"
+              onClick={() => setShowPassword((prev) => !prev)}
+              tabIndex={0}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              disabled={loading}
             >
-              Forgot your password?
-            </a>
+              {showPassword ? "Hide" : "Show"}
+            </button>
           </div>
-          <Input id="password" type="password" required />
+          <Input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
+          />
         </div>
-        <Button type="submit" className="w-full">
-          SignUp
+        <div className="grid gap-3">
+          <Label htmlFor="departmentId">Department</Label>
+          <Select
+            value={departmentId}
+            onValueChange={setDepartmentId}
+            disabled={loading}
+            required
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select department" />
+            </SelectTrigger>
+            <SelectContent>
+              {departments.map((dept) => (
+                <SelectItem key={dept.id} value={dept.id.toString()}>
+                  {dept.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {/* Roles are hidden and default to USER */}
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? "Signing up..." : "SignUp"}
         </Button>
+        {error && (
+          <div className="text-red-500 text-sm text-center">{error}</div>
+        )}
+        {success && (
+          <div className="text-green-500 text-sm text-center">{success}</div>
+        )}
         <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
           <span className="bg-background text-muted-foreground relative z-10 px-2">
             Or continue with
           </span>
         </div>
-        </div>
+      </div>
       <div className="text-center text-sm">
-        Alread&apos;y have an account?{" "}
-        <a href="#" className="underline underline-offset-4">
+        Already have an account?{" "}
+        <Link href="#" className="underline underline-offset-4">
           login
-        </a>
+        </Link>
       </div>
     </form>
-  )
+  );
 }

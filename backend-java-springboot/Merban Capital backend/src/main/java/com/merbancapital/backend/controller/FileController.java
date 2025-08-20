@@ -8,14 +8,10 @@ import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 
 
 @RestController
@@ -32,38 +28,29 @@ public class FileController {
     // 1) Upload endpoint (called by your OCR script)
      @PostMapping("/upload")
     public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) throws IOException {
-
+        // Delegate storage to FileService so uploads and listing use the same directory
+        String stored;
         try {
-            // Use OCR base path from properties
-            String uploadDir = ocrBasePath + File.separator + "incoming-scan";
-
-            // STEP 2: Ensure directory exists
-            File folder = new File(uploadDir);
-            if (!folder.exists()) {
-                folder.mkdirs(); // Create the directory if it doesn't exist
-            }
-
-            // Save the file to that directory
-            Path filePath = Paths.get(uploadDir, file.getOriginalFilename());
-            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-            // STEP 3: Log the upload
-            System.out.println("[BACKEND] Received file for OCR: " + file.getOriginalFilename()); // DEBUG LINE
-            return ResponseEntity.ok("File uploaded to: " + filePath.toString());
-
+            stored = fileService.store(file);
         } catch (IOException e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Upload failed.");
         }
+        // stored now contains the absolute path where the file was saved
+        logUploaded(file.getOriginalFilename(), stored);
+        return ResponseEntity.ok("File uploaded to: " + stored);
+    }
 
-
-
+    // small helper to centralize debug logging for uploads
+    private void logUploaded(String originalName, String savedPath) {
+        System.out.println("[BACKEND] Received file for OCR: " + originalName + " -> " + savedPath);
     }
 
 
     // 2) List endpoint (called by frontend)
     @GetMapping("/list")
     public ResponseEntity<List<String>> listFiles() throws IOException {
-        List<String> files = fileService.listFiles()
+        List<String> files = fileService.listIndexedFiles()
                 .map(Path::getFileName)
                 .map(Object::toString)
                 .collect(Collectors.toList());

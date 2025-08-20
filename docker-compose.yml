@@ -1,3 +1,4 @@
+version: "3.8"
 
 services:
   ocr-service:
@@ -17,11 +18,11 @@ services:
       - MYSQL_PASSWORD
       - MYSQL_HOST=db
     volumes:
-      - "${SCAN_FOLDER}:/app/incoming-scan"
-      - "${OUTPUT_FOLDER}:/app/output"
-      - "${FULLY_INDEXED_FOLDER}:/app/fully_indexed"
-      - "${PARTIALLY_INDEXED_FOLDER}:/app/partially_indexed"
-      - "${FAILED_FOLDER}:/app/failed"
+      - "${SCAN_FOLDER:-./incoming-scan}:/app/incoming-scan"
+      - "${OUTPUT_FOLDER:-./output}:/app/output"
+      - "${FULLY_INDEXED_FOLDER:-./fully_indexed}:/app/fully_indexed"
+      - "${PARTIALLY_INDEXED_FOLDER:-./partially_indexed}:/app/partially_indexed"
+      - "${FAILED_FOLDER:-./failed}:/app/failed"
       - "./logs:/app/logs"
     depends_on:
       db:
