@@ -13,10 +13,10 @@
   "license": "ISC",
   "dependencies": {
     "@shadcn/ui": "^0.0.4",
-    "body-parser": "^1.20.2",
+    "body-parser": "^1.20.5",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2",
+    "express": "^4.22.2",
     "mysql2": "^3.9.7",
     "tesseract.js": "^5.0.4"
   },
